@@ -30,3 +30,6 @@ launcher_accounts.json
 /dist/
 /build/
 *.tsbuildinfo
+
+# Database
+data/

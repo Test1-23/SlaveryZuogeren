@@ -109,27 +109,31 @@ function startBot (customConfig = {}) {
   })
 }
 
+/**
+ * 启动 Web 控制面板 (必须调用以开启仪表盘)
+ * @returns {Promise<void>}
+ */
+async function startServer () {
+  const { start } = require('./web/server')
+  await start()
+}
+
 // 导出
-module.exports = { createBot, startBot, moduleLoader, defaultConfig }
+module.exports = { createBot, startBot, startServer, moduleLoader, defaultConfig }
 
-// 如果直接运行此文件 (node bot/index.js)，则启动一个 bot
+// 如果直接运行此文件，启动 Web 控制面板 + 可选自动启动 bot
 if (require.main === module) {
-  console.log('[Bot] 正在启动...')
+  startServer().then(() => {
+    console.log('[Bot] 控制面板已就绪')
 
-  // 支持命令行参数覆盖
-  const host = process.argv[2] || defaultConfig.server.host
-  const username = process.argv[3] || defaultConfig.bot.username
-
-  startBot({
-    server: { host },
-    bot: { username }
+    // 支持命令行参数: node bot/index.js <host> <username>
+    const host = process.argv[2]
+    const username = process.argv[3]
+    if (host && username) {
+      return startBot({ server: { host }, bot: { username } })
+    }
+  }).catch((err) => {
+    console.error('[Bot] 启动失败:', err.message)
+    process.exit(1)
   })
-    .then((bot) => {
-      console.log(`[Bot] 已连接到 ${host}，用户名: ${username}`)
-      console.log('[Bot] 可用方法: bot.moduleLoader.load("模块名"), bot.moduleLoader.unload("模块名"), bot.moduleLoader.list(), bot.moduleLoader.loaded()')
-    })
-    .catch((err) => {
-      console.error('[Bot] 启动失败:', err.message)
-      process.exit(1)
-    })
 }
