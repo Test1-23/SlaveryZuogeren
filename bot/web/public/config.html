@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bot 配置管理</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav>
+    <h1>Bot 控制面板</h1>
+    <div class="nav-links">
+      <a href="/">仪表盘</a>
+      <a href="config.html" class="active">配置管理</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="toolbar">
+      <button id="newConfigBtn" class="btn-primary">+ 新建配置</button>
+      <span id="availableModules">可用模块:</span>
+    </div>
+
+    <!-- 编辑/新建 表单 -->
+    <div id="editor" class="editor hidden">
+      <h2 id="editorTitle">新建配置</h2>
+      <div class="form-grid">
+        <label>名称 <input type="text" id="cfgName" placeholder="我的机器人"></label>
+        <label>服务器 IP <input type="text" id="cfgHost" value="localhost"></label>
+        <label>端口 <input type="number" id="cfgPort" value="25565"></label>
+        <label>MC 版本 <input type="text" id="cfgVersion" placeholder="留空=自动检测"></label>
+        <label>认证 <select id="cfgAuth">
+          <option value="offline">离线模式</option>
+          <option value="microsoft">Microsoft 正版</option>
+        </select></label>
+        <label>用户名 <input type="text" id="cfgUsername" value="Bot"></label>
+      </div>
+      <label class="full-width">模块 (逗号分隔) <input type="text" id="cfgModules" placeholder="echo, guard"></label>
+      <div class="editor-actions">
+        <button id="cfgSaveBtn" class="btn-primary">保存</button>
+        <button id="cfgCancelBtn">取消</button>
+      </div>
+    </div>
+
+    <table id="configTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>名称</th>
+          <th>服务器</th>
+          <th>版本</th>
+          <th>认证</th>
+          <th>用户名</th>
+          <th>模块</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="8" class="empty">加载中...</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <script src="config.js"></script>
+</body>
+</html>

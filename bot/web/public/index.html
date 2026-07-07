@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mineflayer Bot 控制面板</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav>
+    <h1>Bot 控制面板</h1>
+    <div class="nav-links">
+      <a href="/" class="active">仪表盘</a>
+      <a href="config.html">配置管理</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="toolbar">
+      <span id="status">状态: 连接中...</span>
+      <span id="botCount">运行中: 0</span>
+    </div>
+
+    <table id="botTable">
+      <thead>
+        <tr>
+          <th>名称</th>
+          <th>服务器</th>
+          <th>状态</th>
+          <th>生命</th>
+          <th>饥饿</th>
+          <th>坐标</th>
+          <th>维度</th>
+          <th>游戏模式</th>
+          <th>运行时间</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="10" class="empty">没有运行中的机器人</td></tr>
+      </tbody>
+    </table>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
