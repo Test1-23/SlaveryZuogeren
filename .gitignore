@@ -1,3 +1,31 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
 # Claude / Claude Code
 CLAUDE.md
 .claude/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Minecraft server (test artifacts)
+server_jars/
+test/server_*
+versions/
+
+# Auth (sensitive)
+launcher_accounts.json
+
+# Build artifacts
+/dist/
+/build/
+*.tsbuildinfo
