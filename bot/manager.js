@@ -6,6 +6,7 @@
  */
 
 const EventEmitter = require('events')
+const { snapshot } = require('./botState')
 
 class BotManager extends EventEmitter {
   /**
@@ -79,28 +80,13 @@ class BotManager extends EventEmitter {
   }
 
   _snapshot (entry) {
-    const { bot, config } = entry
-    const s = {
-      id: entry.id, configId: entry.configId, name: config.name,
-      host: config.host, port: config.port, version: config.version,
+    return {
+      id: entry.id, configId: entry.configId, name: entry.config.name,
+      host: entry.config.host, port: entry.config.port, version: entry.config.version,
       status: entry.status, error: entry.error || null,
-      kickReason: entry.kickReason || null, startedAt: entry.startedAt
+      kickReason: entry.kickReason || null, startedAt: entry.startedAt,
+      ...snapshot(entry.bot)
     }
-    if (bot) {
-      s.username = bot.username
-      s.health = bot.health ?? 0
-      s.food = bot.food ?? 0
-      s.foodSaturation = bot.foodSaturation ?? 0
-      s.gameMode = bot.game?.gameMode ?? 'unknown'
-      s.dimension = bot.game?.dimension ?? 'unknown'
-      s.position = bot.entity?.position ? { x: Math.round(bot.entity.position.x), y: Math.round(bot.entity.position.y), z: Math.round(bot.entity.position.z) } : null
-      s.yaw = bot.entity?.yaw ?? null
-      s.pitch = bot.entity?.pitch ?? null
-      s.isAlive = bot.isAlive ?? false
-      s.isSleeping = bot.isSleeping ?? false
-      s.modules = bot.moduleLoader?.loaded() ?? []
-    }
-    return s
   }
 }
 
