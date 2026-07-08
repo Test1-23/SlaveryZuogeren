@@ -38,10 +38,10 @@ function createBot (cfg = {}) {
     ...options
   })
 
-  // 挂载模块加载器
+  // 挂载模块加载器 (方法名精简，直接绑定)
   bot.moduleLoader = {
-    load: async (name, opts) => moduleLoader.loadModule(bot, name, opts),
-    unload: async (name) => moduleLoader.unloadModule(bot, name),
+    load: (name, opts) => moduleLoader.loadModule(bot, name, opts),
+    unload: (name) => moduleLoader.unloadModule(bot, name),
     list: () => moduleLoader.listModules(),
     loaded: () => moduleLoader.getLoadedModules(bot)
   }
