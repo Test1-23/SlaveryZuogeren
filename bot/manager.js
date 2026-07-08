@@ -1,177 +1,96 @@
 /**
  * Bot 管理器 — 管理所有运行中的机器人实例
  *
- * 职责:
- *   - 注册/注销运行中的 bot
- *   - 查询 bot 实时状态 (生命、饥饿、坐标 等)
- *   - 启动/停止 bot
+ * 依赖注入: new BotManager({ createBot })
+ *   测试时可以传入 mock createBot。
  */
 
 const EventEmitter = require('events')
-const { createBot: createMineflayerBot } = require('./index')
 
 class BotManager extends EventEmitter {
-  constructor () {
+  /**
+   * @param {object} deps
+   * @param {function} deps.createBot - 工厂函数 (config) => bot
+   */
+  constructor ({ createBot }) {
     super()
-    this.bots = new Map() // botId -> { id, configId, bot, config, startedAt }
-    this.nextId = 1
+    this._createBot = createBot
+    this._bots = new Map()
+    this._nextId = 1
   }
 
-  /**
-   * 启动一个机器人
-   * @param {object} config - 数据库中的配置对象
-   * @returns {Promise<object>} 运行信息
-   */
+  get count () { return this._bots.size }
+
+  getBots () {
+    return Array.from(this._bots.values()).map(e => this._snapshot(e))
+  }
+
   async startBot (config) {
-    const botId = String(this.nextId++)
-
-    const entry = {
-      id: botId,
-      configId: config.id,
-      config: { ...config },
-      bot: null,
-      startedAt: new Date().toISOString(),
-      status: 'connecting'
-    }
-
-    this.bots.set(botId, entry)
+    const id = String(this._nextId++)
+    const entry = { id, configId: config.id, config: { ...config }, bot: null, status: 'connecting', startedAt: new Date().toISOString() }
+    this._bots.set(id, entry)
     this.emit('update')
 
     try {
-      const bot = createMineflayerBot({
-        server: {
-          host: config.host,
-          port: config.port,
-          version: config.version || false,
-          auth: config.auth
-        },
-        bot: {
-          username: config.username
-        },
-        options: config.options || {},
-        modules: config.modules || []
-      })
-
+      const bot = this._createBot(config)
       entry.bot = bot
 
-      // 监听状态变化
       bot.on('health', () => this.emit('update'))
       bot.on('move', () => this.emit('update'))
       bot.on('death', () => this.emit('update'))
-      bot.on('spawn', () => {
-        entry.status = 'online'
-        this.emit('update')
-      })
-      bot.on('kicked', (reason) => {
-        entry.status = 'kicked'
-        entry.kickReason = reason
-        this.emit('update')
-      })
-      bot.on('end', (reason) => {
-        entry.status = 'stopped'
-        entry.endReason = reason
-        this.emit('update')
-      })
-      bot.on('error', (err) => {
-        entry.status = 'error'
-        entry.error = err.message
-        this.emit('update')
-      })
+      bot.on('spawn', () => { entry.status = 'online'; this.emit('update') })
+      bot.on('kicked', (r) => { entry.status = 'kicked'; entry.kickReason = r; this.emit('update') })
+      bot.on('end', (r) => { entry.status = 'stopped'; entry.endReason = r; this.emit('update') })
+      bot.on('error', (e) => { entry.status = 'error'; entry.error = e.message; this.emit('update') })
 
       await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          reject(new Error('连接超时 (30s)'))
-        }, 30000)
-        bot.once('ready', () => {
-          clearTimeout(timeout)
-          resolve()
-        })
-        bot.once('error', (err) => {
-          clearTimeout(timeout)
-          reject(err)
-        })
+        const t = setTimeout(() => reject(new Error('连接超时 (30s)')), 30000)
+        bot.once('ready', () => { clearTimeout(t); resolve() })
+        bot.once('error', (e) => { clearTimeout(t); reject(e) })
       })
 
       entry.status = 'online'
       this.emit('update')
       return entry
     } catch (err) {
-      entry.status = 'error'
-      entry.error = err.message
+      entry.status = 'error'; entry.error = err.message
       this.emit('update')
       throw err
     }
   }
 
-  /**
-   * 停止一个机器人
-   * @param {string} botId
-   */
-  stopBot (botId) {
-    const entry = this.bots.get(botId)
-    if (!entry) throw new Error(`Bot ${botId} 不存在`)
-    if (entry.bot) {
-      try { entry.bot.end('manager stop') } catch (_) { /* ignore */ }
-    }
-    this.bots.delete(botId)
+  stopBot (id) {
+    const entry = this._bots.get(id)
+    if (!entry) throw new Error(`Bot ${id} 不存在`)
+    try { entry.bot?.end('manager stop') } catch (_) { /* ignore */ }
+    this._bots.delete(id)
     this.emit('update')
   }
 
-  /**
-   * 获取所有运行中 bot 的状态快照
-   * @returns {Array}
-   */
-  getBots () {
-    return Array.from(this.bots.values()).map(entry => this.getBotState(entry))
-  }
-
-  /**
-   * 获取单个 bot 的状态快照
-   * @param {object} entry
-   * @returns {object}
-   */
-  getBotState (entry) {
+  _snapshot (entry) {
     const { bot, config } = entry
-    const state = {
-      id: entry.id,
-      configId: entry.configId,
-      name: config.name,
-      host: config.host,
-      port: config.port,
-      version: config.version,
-      status: entry.status,
-      error: entry.error || null,
-      kickReason: entry.kickReason || null,
-      startedAt: entry.startedAt
+    const s = {
+      id: entry.id, configId: entry.configId, name: config.name,
+      host: config.host, port: config.port, version: config.version,
+      status: entry.status, error: entry.error || null,
+      kickReason: entry.kickReason || null, startedAt: entry.startedAt
     }
-
     if (bot) {
-      state.username = bot.username
-      state.health = bot.health ?? 0
-      state.food = bot.food ?? 0
-      state.foodSaturation = bot.foodSaturation ?? 0
-      state.gameMode = bot.game?.gameMode ?? 'unknown'
-      state.dimension = bot.game?.dimension ?? 'unknown'
-      state.position = bot.entity?.position
-        ? { x: Math.round(bot.entity.position.x), y: Math.round(bot.entity.position.y), z: Math.round(bot.entity.position.z) }
-        : null
-      state.yaw = bot.entity?.yaw ?? null
-      state.pitch = bot.entity?.pitch ?? null
-      state.isAlive = bot.isAlive ?? false
-      state.isSleeping = bot.isSleeping ?? false
-      state.modules = bot.moduleLoader?.loaded() ?? []
+      s.username = bot.username
+      s.health = bot.health ?? 0
+      s.food = bot.food ?? 0
+      s.foodSaturation = bot.foodSaturation ?? 0
+      s.gameMode = bot.game?.gameMode ?? 'unknown'
+      s.dimension = bot.game?.dimension ?? 'unknown'
+      s.position = bot.entity?.position ? { x: Math.round(bot.entity.position.x), y: Math.round(bot.entity.position.y), z: Math.round(bot.entity.position.z) } : null
+      s.yaw = bot.entity?.yaw ?? null
+      s.pitch = bot.entity?.pitch ?? null
+      s.isAlive = bot.isAlive ?? false
+      s.isSleeping = bot.isSleeping ?? false
+      s.modules = bot.moduleLoader?.loaded() ?? []
     }
-
-    return state
-  }
-
-  /**
-   * 获取 bot 数量
-   */
-  get count () {
-    return this.bots.size
+    return s
   }
 }
 
-// 单例
-module.exports = new BotManager()
+module.exports = { BotManager }
