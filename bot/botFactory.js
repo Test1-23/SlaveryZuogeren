@@ -48,8 +48,15 @@ function createBot (cfg = {}) {
 
   // 基础事件日志
   bot.on('error', (err) => { console.error('[Bot] 错误:', err.message) })
-  bot.on('kicked', (reason, loggedIn) => { console.log(`[Bot] 被踢出服务器: ${reason}`) })
-  bot.on('end', (reason) => { console.log(`[Bot] 连接断开: ${reason}`) })
+  bot.on('kicked', (reason) => { console.log(`[Bot] 被踢出服务器: ${reason}`) })
+
+  // 断连时清理所有模块
+  bot.on('end', (reason) => {
+    console.log(`[Bot] 连接断开: ${reason}`)
+    for (const { name } of moduleLoader.getLoadedModules(bot)) {
+      moduleLoader.unloadModule(bot, name).catch(() => {})
+    }
+  })
 
   // spawn 后加载模块
   bot.once('spawn', async () => {

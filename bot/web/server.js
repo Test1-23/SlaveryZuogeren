@@ -63,9 +63,14 @@ function createServer ({ manager, database, moduleLoader, port = 3000 }) {
   app.get('/api/events', (req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive' })
     const send = (data) => res.write(`data: ${JSON.stringify(data)}\n\n`)
-    const onUpdate = () => send({ type: 'update', bots: manager.getBots() })
+    let pending = false
+    const onUpdate = () => {
+      if (pending) return
+      pending = true
+      setImmediate(() => { pending = false; send({ type: 'update', bots: manager.getBots() }) })
+    }
     manager.on('update', onUpdate)
-    onUpdate()
+    send({ type: 'update', bots: manager.getBots() })
     req.on('close', () => manager.off('update', onUpdate))
   })
 

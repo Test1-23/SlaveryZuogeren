@@ -67,6 +67,17 @@ class BotManager extends EventEmitter {
     this.emit('update')
   }
 
+  /** 清理已停止/kicked/error 的僵尸条目 */
+  removeDead (id) {
+    const entry = this._bots.get(id)
+    if (!entry) throw new Error(`Bot ${id} 不存在`)
+    if (entry.status === 'online' || entry.status === 'connecting') {
+      throw new Error(`Bot ${id} 仍在运行，请先停止`)
+    }
+    this._bots.delete(id)
+    this.emit('update')
+  }
+
   _snapshot (entry) {
     const { bot, config } = entry
     const s = {
