@@ -65,23 +65,27 @@ function createConfig (cfg) {
 }
 
 function updateConfig (id, cfg) {
-  const existing = getConfig(id)
-  if (!existing) return null
-  getDB().prepare(`
-    UPDATE bot_configs SET name=@name, host=@host, port=@port, version=@version,
-      auth=@auth, username=@username, modules=@modules, options=@options,
-      updated_at=datetime('now') WHERE id=?
-  `).run({
-    name: cfg.name ?? existing.name,
-    host: cfg.host ?? existing.host,
-    port: cfg.port ?? existing.port,
-    version: cfg.version ?? existing.version,
-    auth: cfg.auth ?? existing.auth,
-    username: cfg.username ?? existing.username,
-    modules: cfg.modules !== undefined ? JSON.stringify(cfg.modules) : JSON.stringify(existing.modules),
-    options: cfg.options !== undefined ? JSON.stringify(cfg.options) : JSON.stringify(existing.options)
-  }, id)
-  return getConfig(id)
+  const db = getDB()
+  const update = db.transaction(() => {
+    const existing = getConfig(id)
+    if (!existing) return null
+    db.prepare(`
+      UPDATE bot_configs SET name=@name, host=@host, port=@port, version=@version,
+        auth=@auth, username=@username, modules=@modules, options=@options,
+        updated_at=datetime('now') WHERE id=?
+    `).run({
+      name: cfg.name ?? existing.name,
+      host: cfg.host ?? existing.host,
+      port: cfg.port ?? existing.port,
+      version: cfg.version ?? existing.version,
+      auth: cfg.auth ?? existing.auth,
+      username: cfg.username ?? existing.username,
+      modules: cfg.modules !== undefined ? JSON.stringify(cfg.modules) : JSON.stringify(existing.modules),
+      options: cfg.options !== undefined ? JSON.stringify(cfg.options) : JSON.stringify(existing.options)
+    }, id)
+    return getConfig(id)
+  })
+  return update()
 }
 
 function deleteConfig (id) {
@@ -89,7 +93,11 @@ function deleteConfig (id) {
 }
 
 function _parse (row) {
-  return { ...row, modules: JSON.parse(row.modules || '[]'), options: JSON.parse(row.options || '{}') }
+  let modules = []
+  let options = {}
+  try { modules = JSON.parse(row.modules || '[]') } catch (_) { modules = [] }
+  try { options = JSON.parse(row.options || '{}') } catch (_) { options = {} }
+  return { ...row, modules, options }
 }
 
 module.exports = { getDB, getAllConfigs, getConfig, createConfig, updateConfig, deleteConfig }
