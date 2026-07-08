@@ -18,21 +18,23 @@ module.exports = {
   dependencies: [],
 
   inject (bot, options) {
-    // 在 bot 上注册命令
-    bot.echoListener = function (username, message) {
+    const listener = function (username, message) {
       if (username === bot.username) return
       if (message.startsWith('echo ')) {
-        const echoMsg = message.slice(5)
-        bot.chat(`[Echo] ${username}: ${echoMsg}`)
+        bot.chat(`[Echo] ${username}: ${message.slice(5)}`)
       }
     }
-    bot.on('chat', bot.echoListener)
+    bot.on('chat', listener)
+    // 闭包持有 listener，unload 时通过 bot 取回
+    bot._echoListener = listener
     console.log('[Echo] 模块已注入')
   },
 
   unload (bot) {
-    bot.removeListener('chat', bot.echoListener)
-    delete bot.echoListener
+    if (bot._echoListener) {
+      bot.removeListener('chat', bot._echoListener)
+      delete bot._echoListener
+    }
     console.log('[Echo] 模块已卸载')
   }
 }
