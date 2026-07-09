@@ -27,6 +27,10 @@ function mount (app, { manager, database }) {
     try { manager.stopBot(req.params.id); res.json({ success: true }) } catch (e) { res.status(404).json({ error: e.message }) }
   })
 
+  r.post('/remove-dead/:id', (req, res) => {
+    try { manager.removeDead(req.params.id); res.json({ success: true }) } catch (e) { res.status(400).json({ error: e.message }) }
+  })
+
   app.use('/api/bots', r)
 }
 

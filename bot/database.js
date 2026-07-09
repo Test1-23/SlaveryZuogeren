@@ -95,8 +95,8 @@ function deleteConfig (id) {
 function _parse (row) {
   let modules = []
   let options = {}
-  try { modules = JSON.parse(row.modules || '[]') } catch (_) { modules = [] }
-  try { options = JSON.parse(row.options || '{}') } catch (_) { options = {} }
+  try { modules = JSON.parse(row.modules || '[]') } catch (e) { console.error('[DB] 解析 modules 失败 (id=' + row.id + '):', e.message) }
+  try { options = JSON.parse(row.options || '{}') } catch (e) { console.error('[DB] 解析 options 失败 (id=' + row.id + '):', e.message) }
   return { ...row, modules, options }
 }
 

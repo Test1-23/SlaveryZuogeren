@@ -16,10 +16,11 @@
  */
 
 const mineflayer = require('mineflayer')
-const moduleLoader = require('./moduleLoader')
+const { loadModule, unloadModule, listModules, getLoadedModules, loadModules } = require('./moduleLoader')
 const defaults = require('./config')
 
-function createBot (cfg = {}) {
+function createBot (cfg = {}, { moduleLoader } = {}) {
+  const ml = moduleLoader || { loadModule, unloadModule, listModules, getLoadedModules, loadModules }
   const host = cfg.host || defaults.host
   const port = cfg.port || defaults.port
   const username = cfg.username || defaults.username
@@ -38,12 +39,12 @@ function createBot (cfg = {}) {
     ...options
   })
 
-  // 挂载模块加载器 (方法名精简，直接绑定)
+  // 挂载模块加载器
   bot.moduleLoader = {
-    load: (name, opts) => moduleLoader.loadModule(bot, name, opts),
-    unload: (name) => moduleLoader.unloadModule(bot, name),
-    list: () => moduleLoader.listModules(),
-    loaded: () => moduleLoader.getLoadedModules(bot)
+    load: (name, opts) => ml.loadModule(bot, name, opts),
+    unload: (name) => ml.unloadModule(bot, name),
+    list: () => ml.listModules(),
+    loaded: () => ml.getLoadedModules(bot)
   }
 
   // 基础事件日志
@@ -53,17 +54,16 @@ function createBot (cfg = {}) {
   // 断连时清理所有模块
   bot.on('end', (reason) => {
     console.log(`[Bot] 连接断开: ${reason}`)
-    for (const { name } of moduleLoader.getLoadedModules(bot)) {
-      moduleLoader.unloadModule(bot, name).catch(() => {})
+    const names = ml.getLoadedModules(bot).map(m => m.name).reverse()
+    for (const name of names) {
+      ml.unloadModule(bot, name).catch(() => {})
     }
   })
 
   // spawn 后加载模块
   bot.once('spawn', async () => {
     console.log(`[Bot] ${bot.username} 已生成，游戏模式: ${bot.game?.gameMode}`)
-    for (const name of modules) {
-      try { await moduleLoader.loadModule(bot, name) } catch (e) { console.error(`[Bot] 模块 ${name} 加载失败:`, e.message) }
-    }
+    await ml.loadModules(bot, modules)
     bot.emit('ready')
   })
 
