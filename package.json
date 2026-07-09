@@ -5,11 +5,19 @@
   "main": "bot/index.js",
   "scripts": {
     "start": "node bot/cli.js",
-    "dev": "node bot/cli.js"
+    "dev": "node bot/cli.js",
+    "test": "mocha bot/test/**/*.test.js --reporter spec --exit --timeout 10000",
+    "test:unit": "mocha bot/test/botState.test.js bot/test/moduleRegistry.test.js bot/test/database.test.js --reporter spec --exit --timeout 5000",
+    "test:integration": "mocha bot/test/moduleLoader.test.js bot/test/manager.test.js bot/test/web.test.js --reporter spec --exit --timeout 10000",
+    "test:e2e": "mocha bot/test/e2e.test.js bot/test/web-e2e.test.js --reporter spec --exit --timeout 60000"
   },
   "dependencies": {
     "better-sqlite3": "^11.0.0",
     "express": "^4.21.0",
     "mineflayer": "file:./mineflayer"
+  },
+  "devDependencies": {
+    "mocha": "^11.0.1",
+    "supertest": "^7.0.0"
   }
 }
