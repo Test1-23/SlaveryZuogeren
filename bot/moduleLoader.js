@@ -99,7 +99,7 @@ async function unloadModule (bot, moduleName) {
   if (!meta) { console.warn(`[ModuleLoader] "${moduleName}" 未加载`); return }
 
   // 检查反向依赖
-  for (const [n, m] of reg._loaded) {
+  for (const [n, m] of reg.entries()) {
     if (m.dependencies.includes(moduleName)) {
       throw new Error(`无法卸载 "${moduleName}": "${n}" 依赖它`)
     }

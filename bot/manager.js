@@ -55,6 +55,7 @@ class BotManager extends EventEmitter {
       return entry
     } catch (err) {
       entry.status = 'error'; entry.error = err.message
+      try { entry.bot?.end('startup failed') } catch (_) { /* ignore */ }
       this.emit('update')
       throw err
     }

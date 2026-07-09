@@ -13,12 +13,15 @@ class ModuleRegistry {
     this._order = []
   }
 
-  get loaded () { return this._order.map(n => ({ name: n, version: this._loaded.get(n).version })) }
+  get loaded () { return this._order.map(n => ({ name: n, version: this._loaded.get(n)?.version ?? '?' })) }
   get count () { return this._order.length }
 
   has (name) { return this._loaded.has(name) }
   get (name) { return this._loaded.get(name) || null }
   list () { return this._order.slice() }
+
+  /** 迭代所有已注册模块 [name, metadata] */
+  entries () { return Array.from(this._loaded.entries()) }
 
   register (meta) {
     if (this._loaded.has(meta.name)) return false
