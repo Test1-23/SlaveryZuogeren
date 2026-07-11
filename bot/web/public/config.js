@@ -1,15 +1,47 @@
 const $ = (s) => document.querySelector(s)
+const $$ = (s) => document.querySelectorAll(s)
 
 let editingId = null
+let _modules = []
+
+// ===== 模块选择器 =====
+
+async function loadModules () {
+  _modules = await fetch('/api/modules').then(r => r.json())
+  $('#availMods').textContent = `可用模块: ${_modules.join(', ') || '(无)'}`
+  buildModulePick('cfgModulesDrop', _modules)
+}
+
+function buildModulePick (dropId, modules) {
+  if (!modules.length) { $('#' + dropId).innerHTML = '<span class="mp-empty">暂无可用模块</span>'; return }
+  $('#' + dropId).innerHTML = modules.map(m => `
+    <label class="mp-item"><input type="checkbox" value="${esc(m)}"> ${esc(m)}</label>
+  `).join('')
+}
+
+function toggleModulePick (pickId) {
+  const drop = $('#' + pickId + 'Drop')
+  drop.classList.toggle('show')
+  const handler = (e) => {
+    if (!e.target.closest('#' + pickId)) { drop.classList.remove('show'); document.removeEventListener('click', handler) }
+  }
+  if (drop.classList.contains('show')) {
+    setTimeout(() => document.addEventListener('click', handler), 0)
+  }
+}
+
+function getCheckedModules (dropId) {
+  return Array.from($$('#' + dropId + ' input[type=checkbox]:checked')).map(cb => cb.value)
+}
+
+function setCheckedModules (dropId, names) {
+  $$('#' + dropId + ' input[type=checkbox]').forEach(cb => { cb.checked = names.includes(cb.value) })
+}
 
 // ===== 加载 =====
 
 async function load () {
-  const [configs, modules] = await Promise.all([
-    fetch('/api/configs').then(r => r.json()),
-    fetch('/api/modules').then(r => r.json())
-  ])
-  $('#availMods').textContent = `可用模块: ${modules.join(', ') || '(无)'}`
+  const configs = await fetch('/api/configs').then(r => r.json())
   render(configs)
 }
 
@@ -18,9 +50,9 @@ function render (configs) {
   if (!configs.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty">暂无配置，点击 "新建配置" 创建</td></tr>'; return }
   tbody.innerHTML = configs.map(c => `
     <tr>
-      <td>${c.id}</td><td><strong>${esc(c.name)}</strong></td>
+      <td>${c.id}</td><td><strong>${esc(c.name)}</strong></td><td>${esc(c.username)}</td>
       <td>${esc(c.host)}:${c.port}</td><td>${c.version || '自动'}</td>
-      <td>${c.auth}</td><td>${esc(c.username)}</td>
+      <td>${c.auth}</td>
       <td>${(c.modules||[]).join(', ') || '-'}</td>
       <td>
         <button class="btn-start" onclick="launch(${c.id})">启动</button>
@@ -45,7 +77,10 @@ function show (cfg) {
   $('#cfgVersion').value = cfg?.version ?? ''
   $('#cfgAuth').value = cfg?.auth ?? 'offline'
   $('#cfgUsername').value = cfg?.username ?? 'Bot'
-  $('#cfgModules').value = (cfg?.modules ?? []).join(', ')
+  // 等待模块列表加载后勾选
+  if (_modules.length) {
+    setCheckedModules('cfgModulesDrop', cfg?.modules ?? [])
+  }
   $('#editor').classList.remove('hidden')
 }
 
@@ -65,9 +100,9 @@ async function save () {
     version: $('#cfgVersion').value.trim(),
     auth: $('#cfgAuth').value,
     username: $('#cfgUsername').value.trim() || 'Bot',
-    modules: $('#cfgModules').value.split(',').map(s => s.trim()).filter(Boolean)
+    modules: getCheckedModules('cfgModulesDrop')
   }
-  if (!data.name) return alert('名称不能为空')
+  if (!data.name) return alert('备注名不能为空')
 
   const url = editingId ? `/api/configs/${editingId}` : '/api/configs'
   const method = editingId ? 'PUT' : 'POST'
@@ -98,4 +133,6 @@ async function del (id) {
 
 function esc (s) { return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]) }
 
+// ===== 初始化 =====
 load()
+loadModules()

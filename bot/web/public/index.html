@@ -29,15 +29,20 @@
 
     <!-- 快速新建 -->
     <section class="editor compact" id="quickEditor">
-      <h3 id="qeTitle">快速新建机器人</h3>
+      <h3>快速新建机器人</h3>
       <div class="form-inline">
-        <input type="text" id="qeName" placeholder="名称" class="inp">
+        <input type="text" id="qeName" placeholder="备注名" class="inp">
         <input type="text" id="qeHost" value="localhost" placeholder="IP" class="inp">
         <input type="number" id="qePort" value="25565" placeholder="端口" class="inp inp-sm">
         <input type="text" id="qeVersion" value="" placeholder="版本 (留空=自动)" class="inp inp-sm">
         <select id="qeAuth" class="inp inp-sm"><option value="offline">离线</option><option value="microsoft">正版</option></select>
         <input type="text" id="qeUsername" value="Bot" placeholder="用户名" class="inp">
-        <input type="text" id="qeModules" placeholder="模块 (逗号分隔)" class="inp">
+      </div>
+      <div class="form-inline" style="margin-top:8px">
+        <div class="module-pick" id="qeModules">
+          <button type="button" class="module-pick-btn" onclick="toggleModulePick('qeModules')">选择模块 ▾</button>
+          <div class="module-pick-drop" id="qeModulesDrop"></div>
+        </div>
         <button class="btn-primary" onclick="quickCreateAndStart()">创建并启动</button>
         <button class="btn-ghost" onclick="quickSaveOnly()">仅保存</button>
       </div>
@@ -52,12 +57,12 @@
       <table id="botTable">
         <thead>
           <tr>
-            <th>名称</th><th>服务器</th><th>状态</th><th>生命</th><th>饥饿</th>
+            <th>备注名</th><th>用户名</th><th>服务器</th><th>状态</th><th>生命</th><th>饥饿</th>
             <th>坐标</th><th>维度</th><th>模式</th><th>运行</th><th>操作</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td colspan="10" class="empty">没有运行中的机器人</td></tr>
+          <tr><td colspan="11" class="empty">没有运行中的机器人</td></tr>
         </tbody>
       </table>
     </section>

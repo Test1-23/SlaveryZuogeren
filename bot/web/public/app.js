@@ -1,7 +1,6 @@
 const $ = (s) => document.querySelector(s)
-const $$ = (s) => document.querySelectorAll(s)
 
-// ===== SSE 实时更新 =====
+// ===== SSE =====
 
 const evtSource = new EventSource('/api/events')
 evtSource.onmessage = (e) => {
@@ -10,6 +9,38 @@ evtSource.onmessage = (e) => {
 }
 evtSource.onerror = () => { $('#status').textContent = '状态: 重连中...' }
 evtSource.onopen = () => { $('#status').textContent = '状态: 实时' }
+
+// ===== 模块选择器 =====
+
+let _modules = []
+
+async function loadModules () {
+  _modules = await fetch('/api/modules').then(r => r.json())
+  buildModulePick('qeModulesDrop', _modules)
+}
+
+function buildModulePick (dropId, modules) {
+  if (!modules.length) { $('#' + dropId).innerHTML = '<span class="mp-empty">暂无可用模块</span>'; return }
+  $('#' + dropId).innerHTML = modules.map(m => `
+    <label class="mp-item"><input type="checkbox" value="${esc(m)}"> ${esc(m)}</label>
+  `).join('')
+}
+
+function toggleModulePick (pickId) {
+  const drop = $('#' + pickId + 'Drop')
+  drop.classList.toggle('show')
+  // 点击外部关闭
+  const handler = (e) => {
+    if (!e.target.closest('#' + pickId)) { drop.classList.remove('show'); document.removeEventListener('click', handler) }
+  }
+  if (drop.classList.contains('show')) {
+    setTimeout(() => document.addEventListener('click', handler), 0)
+  }
+}
+
+function getCheckedModules (dropId) {
+  return Array.from($$('#' + dropId + ' input[type=checkbox]:checked')).map(cb => cb.value)
+}
 
 // ===== 快速启动：加载配置列表 =====
 
@@ -36,23 +67,16 @@ async function loadConfigList () {
 
 async function quickCreateAndStart () {
   const cfg = _readForm()
-  if (!cfg.name) return alert('请输入名称')
-  const created = await fetch('/api/configs', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(cfg)
-  }).then(r => r.json())
-  if (created.error) return alert('创建失败: ' + created.error)
+  if (!cfg.name) return alert('请输入备注名')
+  const created = await _saveConfig(cfg)
+  if (!created) return
   await launchBot(created.id)
 }
 
 async function quickSaveOnly () {
   const cfg = _readForm()
-  if (!cfg.name) return alert('请输入名称')
-  const res = await fetch('/api/configs', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(cfg)
-  }).then(r => r.json())
-  if (res.error) return alert('保存失败: ' + res.error)
+  if (!cfg.name) return alert('请输入备注名')
+  await _saveConfig(cfg)
   _clearForm()
   loadConfigList()
 }
@@ -65,16 +89,25 @@ function _readForm () {
     version: $('#qeVersion').value.trim(),
     auth: $('#qeAuth').value,
     username: $('#qeUsername').value.trim() || 'Bot',
-    modules: $('#qeModules').value.split(',').map(s => s.trim()).filter(Boolean)
+    modules: getCheckedModules('qeModulesDrop')
   }
+}
+
+async function _saveConfig (cfg) {
+  const res = await fetch('/api/configs', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(cfg)
+  }).then(r => r.json())
+  if (res.error) { alert('保存失败: ' + res.error); return null }
+  return res
 }
 
 function _clearForm () {
   $('#qeName').value = ''
-  $('#qeModules').value = ''
+  $$('#qeModulesDrop input[type=checkbox]').forEach(cb => cb.checked = false)
 }
 
-// ===== 启动 Bot =====
+// ===== 启动 / 停止 / 清理 =====
 
 async function launchBot (configId) {
   try {
@@ -84,21 +117,19 @@ async function launchBot (configId) {
     })
     if (!res.ok) throw new Error((await res.json()).error)
     loadConfigList()
-  } catch (err) {
-    alert('启动失败: ' + err.message)
-  }
+  } catch (err) { alert('启动失败: ' + err.message) }
 }
-
-// ===== 停止 Bot =====
 
 async function stopBot (id) {
   if (!confirm('确定停止此机器人？')) return
   try {
     const res = await fetch(`/api/bots/stop/${id}`, { method: 'POST' })
     if (!res.ok) throw new Error((await res.json()).error)
-  } catch (err) {
-    alert('停止失败: ' + err.message)
-  }
+  } catch (err) { alert('停止失败: ' + err.message) }
+}
+
+async function removeDead (id) {
+  try { await fetch(`/api/bots/remove-dead/${id}`, { method: 'POST' }) } catch (_) { /* ignore */ }
 }
 
 // ===== 渲染 Bot 表格 =====
@@ -107,12 +138,13 @@ function renderBots (bots) {
   $('#botCount').textContent = `运行中: ${bots.length}`
   const tbody = $('#botTable tbody')
   if (bots.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" class="empty">没有运行中的机器人 — 使用上方表单创建并启动</td></tr>'
+    tbody.innerHTML = '<tr><td colspan="11" class="empty">没有运行中的机器人</td></tr>'
     return
   }
   tbody.innerHTML = bots.map(b => `
     <tr>
-      <td><strong>${esc(b.name)}</strong><br><small>${esc(b.username)}</small></td>
+      <td><strong>${esc(b.name)}</strong></td>
+      <td>${esc(b.username)}</td>
       <td>${esc(b.host)}:${b.port}</td>
       <td><span class="badge badge-${b.status}">${b.status}</span>${b.error ? `<br><small>${esc(b.error)}</small>` : ''}</td>
       <td>${b.health ?? '?'}</td>
@@ -132,12 +164,6 @@ function renderBots (bots) {
   `).join('')
 }
 
-async function removeDead (id) {
-  try {
-    await fetch(`/api/bots/remove-dead/${id}`, { method: 'POST' })
-  } catch (_) { /* ignore */ }
-}
-
 function esc (s) { return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]) }
 
 function elapsed (start) {
@@ -149,3 +175,4 @@ function elapsed (start) {
 
 // ===== 初始化 =====
 loadConfigList()
+loadModules()

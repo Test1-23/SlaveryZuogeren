@@ -25,14 +25,20 @@
     <div id="editor" class="editor hidden">
       <h2 id="editorTitle">新建配置</h2>
       <div class="form-grid">
-        <label>名称 *<input type="text" id="cfgName" placeholder="我的机器人"></label>
+        <label>备注名 *<input type="text" id="cfgName" placeholder="给自己看的备注"></label>
+        <label>用户名<input type="text" id="cfgUsername" value="Bot" placeholder="游戏内显示的名字"></label>
         <label>服务器 IP<input type="text" id="cfgHost" value="localhost"></label>
         <label>端口<input type="number" id="cfgPort" value="25565"></label>
         <label>MC 版本<input type="text" id="cfgVersion" placeholder="留空=自动检测"></label>
         <label>认证方式<select id="cfgAuth"><option value="offline">离线模式</option><option value="microsoft">Microsoft 正版</option></select></label>
-        <label>用户名<input type="text" id="cfgUsername" value="Bot"></label>
       </div>
-      <label class="full-width">模块列表<input type="text" id="cfgModules" placeholder="echo, guard (逗号分隔)"></label>
+      <label class="full-width">
+        模块
+        <div class="module-pick" id="cfgModules">
+          <button type="button" class="module-pick-btn" onclick="toggleModulePick('cfgModules')">选择模块 ▾</button>
+          <div class="module-pick-drop" id="cfgModulesDrop"></div>
+        </div>
+      </label>
       <div class="editor-actions">
         <button id="saveBtn" class="btn-primary">保存</button>
         <button id="cancelBtn">取消</button>
@@ -42,7 +48,7 @@
     <!-- 配置列表 -->
     <table id="configTable">
       <thead>
-        <tr><th>ID</th><th>名称</th><th>服务器</th><th>版本</th><th>认证</th><th>用户</th><th>模块</th><th>操作</th></tr>
+        <tr><th>ID</th><th>备注名</th><th>用户名</th><th>服务器</th><th>版本</th><th>认证</th><th>模块</th><th>操作</th></tr>
       </thead>
       <tbody><tr><td colspan="8" class="empty">加载中...</td></tr></tbody>
     </table>

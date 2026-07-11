@@ -104,6 +104,29 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .editor-actions button:last-child { background: var(--border); color: var(--text); border: none; padding: 8px 18px; border-radius: var(--radius); cursor: pointer; }
 .hidden { display: none !important; }
 
+/* ===== 模块下拉选择器 ===== */
+.module-pick { position: relative; display: inline-block; }
+.module-pick-btn {
+  padding: 7px 14px; border: 1px solid var(--border); border-radius: 4px;
+  background: var(--bg); color: var(--text); font-size: 13px; cursor: pointer;
+  white-space: nowrap;
+}
+.module-pick-btn:hover { border-color: var(--accent); }
+.module-pick-drop {
+  display: none; position: absolute; top: 100%; left: 0; z-index: 100;
+  min-width: 180px; max-height: 200px; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+  padding: 4px 0; margin-top: 2px; box-shadow: 0 8px 24px rgba(0,0,0,.4);
+}
+.module-pick-drop.show { display: block; }
+.mp-item {
+  display: flex; align-items: center; gap: 8px; padding: 6px 14px;
+  font-size: 13px; color: var(--text); cursor: pointer; white-space: nowrap;
+}
+.mp-item:hover { background: var(--bg); }
+.mp-item input[type=checkbox] { accent-color: var(--accent); cursor: pointer; }
+.mp-empty { padding: 8px 14px; font-size: 12px; color: var(--text-muted); display: block; }
+
 /* ===== 表格 ===== */
 table {
   width: 100%; border-collapse: collapse; background: var(--surface);
