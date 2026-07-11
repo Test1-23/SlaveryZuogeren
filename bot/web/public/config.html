@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bot 配置管理</title>
+  <title>配置管理</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -17,47 +17,34 @@
 
   <main>
     <div class="toolbar">
-      <button id="newConfigBtn" class="btn-primary">+ 新建配置</button>
-      <span id="availableModules">可用模块:</span>
+      <button id="newCfgBtn" class="btn-primary">+ 新建配置</button>
+      <span id="availMods">可用模块:</span>
     </div>
 
-    <!-- 编辑/新建 表单 -->
+    <!-- 编辑器 -->
     <div id="editor" class="editor hidden">
       <h2 id="editorTitle">新建配置</h2>
       <div class="form-grid">
-        <label>名称 <input type="text" id="cfgName" placeholder="我的机器人"></label>
-        <label>服务器 IP <input type="text" id="cfgHost" value="localhost"></label>
-        <label>端口 <input type="number" id="cfgPort" value="25565"></label>
-        <label>MC 版本 <input type="text" id="cfgVersion" placeholder="留空=自动检测"></label>
-        <label>认证 <select id="cfgAuth">
-          <option value="offline">离线模式</option>
-          <option value="microsoft">Microsoft 正版</option>
-        </select></label>
-        <label>用户名 <input type="text" id="cfgUsername" value="Bot"></label>
+        <label>名称 *<input type="text" id="cfgName" placeholder="我的机器人"></label>
+        <label>服务器 IP<input type="text" id="cfgHost" value="localhost"></label>
+        <label>端口<input type="number" id="cfgPort" value="25565"></label>
+        <label>MC 版本<input type="text" id="cfgVersion" placeholder="留空=自动检测"></label>
+        <label>认证方式<select id="cfgAuth"><option value="offline">离线模式</option><option value="microsoft">Microsoft 正版</option></select></label>
+        <label>用户名<input type="text" id="cfgUsername" value="Bot"></label>
       </div>
-      <label class="full-width">模块 (逗号分隔) <input type="text" id="cfgModules" placeholder="echo, guard"></label>
+      <label class="full-width">模块列表<input type="text" id="cfgModules" placeholder="echo, guard (逗号分隔)"></label>
       <div class="editor-actions">
-        <button id="cfgSaveBtn" class="btn-primary">保存</button>
-        <button id="cfgCancelBtn">取消</button>
+        <button id="saveBtn" class="btn-primary">保存</button>
+        <button id="cancelBtn">取消</button>
       </div>
     </div>
 
+    <!-- 配置列表 -->
     <table id="configTable">
       <thead>
-        <tr>
-          <th>ID</th>
-          <th>名称</th>
-          <th>服务器</th>
-          <th>版本</th>
-          <th>认证</th>
-          <th>用户名</th>
-          <th>模块</th>
-          <th>操作</th>
-        </tr>
+        <tr><th>ID</th><th>名称</th><th>服务器</th><th>版本</th><th>认证</th><th>用户</th><th>模块</th><th>操作</th></tr>
       </thead>
-      <tbody>
-        <tr><td colspan="8" class="empty">加载中...</td></tr>
-      </tbody>
+      <tbody><tr><td colspan="8" class="empty">加载中...</td></tr></tbody>
     </table>
   </main>
 

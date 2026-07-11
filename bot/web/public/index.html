@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mineflayer Bot 控制面板</title>
+  <title>Bot 仪表盘</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,30 +16,51 @@
   </nav>
 
   <main>
-    <div class="toolbar">
-      <span id="status">状态: 连接中...</span>
-      <span id="botCount">运行中: 0</span>
-    </div>
+    <!-- 快速启动 -->
+    <section class="quickstart">
+      <div class="qs-header">
+        <h2>快速启动</h2>
+        <button class="btn-sm" onclick="loadConfigList()">刷新</button>
+      </div>
+      <div class="qs-grid" id="quickStartList">
+        <span class="empty">加载中...</span>
+      </div>
+    </section>
 
-    <table id="botTable">
-      <thead>
-        <tr>
-          <th>名称</th>
-          <th>服务器</th>
-          <th>状态</th>
-          <th>生命</th>
-          <th>饥饿</th>
-          <th>坐标</th>
-          <th>维度</th>
-          <th>游戏模式</th>
-          <th>运行时间</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td colspan="10" class="empty">没有运行中的机器人</td></tr>
-      </tbody>
-    </table>
+    <!-- 快速新建 -->
+    <section class="editor compact" id="quickEditor">
+      <h3 id="qeTitle">快速新建机器人</h3>
+      <div class="form-inline">
+        <input type="text" id="qeName" placeholder="名称" class="inp">
+        <input type="text" id="qeHost" value="localhost" placeholder="IP" class="inp">
+        <input type="number" id="qePort" value="25565" placeholder="端口" class="inp inp-sm">
+        <input type="text" id="qeVersion" value="" placeholder="版本 (留空=自动)" class="inp inp-sm">
+        <select id="qeAuth" class="inp inp-sm"><option value="offline">离线</option><option value="microsoft">正版</option></select>
+        <input type="text" id="qeUsername" value="Bot" placeholder="用户名" class="inp">
+        <input type="text" id="qeModules" placeholder="模块 (逗号分隔)" class="inp">
+        <button class="btn-primary" onclick="quickCreateAndStart()">创建并启动</button>
+        <button class="btn-ghost" onclick="quickSaveOnly()">仅保存</button>
+      </div>
+    </section>
+
+    <!-- 运行中的 Bot -->
+    <section>
+      <div class="toolbar">
+        <span id="status">状态: 连接中...</span>
+        <span id="botCount">运行中: 0</span>
+      </div>
+      <table id="botTable">
+        <thead>
+          <tr>
+            <th>名称</th><th>服务器</th><th>状态</th><th>生命</th><th>饥饿</th>
+            <th>坐标</th><th>维度</th><th>模式</th><th>运行</th><th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="10" class="empty">没有运行中的机器人</td></tr>
+        </tbody>
+      </table>
+    </section>
   </main>
 
   <script src="app.js"></script>
