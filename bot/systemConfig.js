@@ -10,7 +10,8 @@ const CONFIG_PATH = path.join(__dirname, '..', 'data', 'systemConfig.json')
 
 const DEFAULTS = {
   deepseekApiKey: '',
-  deepseekModel: 'deepseek-v4-flash'
+  deepseekModel: 'deepseek-v4-flash',
+  aiSystemPrompt: ''
 }
 
 function _ensureDir () {

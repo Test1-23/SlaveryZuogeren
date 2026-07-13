@@ -260,6 +260,9 @@ function renderBots (bots) {
       </tr>
     `).join('')
   }
+  // 更新 AI 面板
+  updateAiPanel(bots)
+
   // 更新聊天面板的 bot 选择器
   const sel = $('#chatBotSelect')
   const online = bots.filter(b => b.status === 'online')
@@ -346,6 +349,136 @@ function elapsed (start) {
   const diff = Date.now() - new Date(start).getTime()
   const m = Math.floor(diff / 60000)
   return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`
+}
+
+// ===== AI 面板 =====
+
+let _aiPollTimer = null
+let _activeAiBot = null
+
+function updateAiPanel (bots) {
+  const sel = $('#aiBotSelect')
+  const online = bots.filter(b => b.status === 'online' && (b.modules || []).some(m => m.name === 'v4fchat'))
+  sel.innerHTML = online.map(b => `<option value="${b.id}">${esc(b.name)}</option>`).join('')
+  if (online.length === 0) {
+    $('#aiPanel').classList.add('hidden')
+    _activeAiBot = null
+    clearInterval(_aiPollTimer)
+  } else if (!_activeAiBot || !online.find(b => b.id === _activeAiBot)) {
+    if (online[0]) openAi(online[0].id)
+  } else {
+    // 保持当前 bot，更新连接状态
+    const bot = bots.find(b => b.id === _activeAiBot)
+    if (bot) updateAiStatusBadge(bot.modules)
+  }
+}
+
+function openAi (botId) {
+  _activeAiBot = botId
+  $('#aiBotSelect').value = botId
+  $('#aiPanel').classList.remove('hidden')
+  fetchAiState()
+  clearInterval(_aiPollTimer)
+  _aiPollTimer = setInterval(fetchAiState, 2000)
+}
+
+function switchAiBot () {
+  const id = $('#aiBotSelect').value
+  if (id) openAi(id)
+}
+
+async function fetchAiState () {
+  if (!_activeAiBot) return
+  try {
+    const data = await fetch(`/api/bots/${_activeAiBot}/ai`).then(r => r.json()).catch(() => null)
+    if (!data || data.status === 'not_loaded') {
+      $('#aiStatusBadge').textContent = '未加载'
+      $('#aiStatusBadge').className = 'badge badge-stopped'
+      return
+    }
+    updateAiStatusBadge([{ name: 'v4fchat' }])
+    $('#aiStatusBadge').textContent = data.status
+    $('#aiStatusBadge').className = `badge badge-${data.status === 'ok' || data.status === 'idle' ? 'online' : data.status === 'calling' ? 'connecting' : 'error'}`
+
+    if (data.context) {
+      $('#aiSystemPrompt').value = data.context.systemPrompt || ''
+      $('#aiMaxHistory').value = data.context.maxHistory || 10
+    }
+    if (data.lastError) {
+      $('#aiStats').innerHTML = `<div style="color:var(--red);margin-bottom:4px">错误: ${esc(data.lastError)}</div>` + _statsHtml(data)
+    } else {
+      $('#aiStats').innerHTML = _statsHtml(data)
+    }
+    if (data.history && data.history.length > 0) {
+      $('#aiLog').innerHTML = data.history.map(h => {
+        const role = h.role === 'user' ? '玩家' : 'AI'
+        const cls = h.role === 'user' ? 'chat-user' : 'chat-system'
+        return `<div class="chat-msg"><span class="chat-time">${new Date(h.timestamp).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span> <span class="${cls}">[${role}]</span> ${esc(h.content)}</div>`
+      }).join('')
+      const el = $('#aiLog')
+      el.scrollTop = el.scrollHeight
+    }
+  } catch (_) { /* ignore */ }
+}
+
+function _statsHtml (data) {
+  return `调用: ${data.totalCalls || 0} 次 · 错误: ${data.totalErrors || 0} 次 · 最后: ${data.lastCall ? new Date(data.lastCall).toLocaleTimeString('zh-CN') : '-'}`
+}
+
+async function saveAiConfig () {
+  if (!_activeAiBot) return
+  const body = {
+    systemPrompt: $('#aiSystemPrompt').value.trim(),
+    maxHistory: parseInt($('#aiMaxHistory').value) || 10
+  }
+  try {
+    const res = await fetch(`/api/bots/${_activeAiBot}/ai`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    })
+    if (!res.ok) throw new Error((await res.json()).error)
+    $('#aiSaveMsg').textContent = '已保存'
+    setTimeout(() => { $('#aiSaveMsg').textContent = '' }, 2000)
+  } catch (err) { alert('保存失败: ' + err.message) }
+}
+
+async function testAiConnection () {
+  if (!_activeAiBot) return
+  $('#aiStatusBadge').textContent = '测试中...'
+  $('#aiStatusBadge').className = 'badge badge-connecting'
+  try {
+    const res = await fetch(`/api/bots/${_activeAiBot}/ai/test`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+    const data = await res.json()
+    if (data.success) {
+      $('#aiStatusBadge').textContent = 'ok'
+      $('#aiStatusBadge').className = 'badge badge-online'
+      $('#aiStats').innerHTML = `<div style="color:var(--green)">连接成功: ${esc(data.response)}</div>` + $('#aiStats').innerHTML
+    } else {
+      $('#aiStatusBadge').textContent = 'error'
+      $('#aiStatusBadge').className = 'badge badge-error'
+      $('#aiStats').innerHTML = `<div style="color:var(--red)">测试失败: ${esc(data.error)}</div>` + $('#aiStats').innerHTML
+    }
+  } catch (err) {
+    $('#aiStatusBadge').textContent = 'error'
+    $('#aiStatusBadge').className = 'badge badge-error'
+  }
+}
+
+async function clearAiHistory () {
+  if (!_activeAiBot || !confirm('清空 AI 对话历史？')) return
+  await fetch(`/api/bots/${_activeAiBot}/ai`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clearHistory: true })
+  })
+  fetchAiState()
+}
+
+function updateAiStatusBadge (modules) {
+  const hasAi = modules && modules.some(m => m.name === 'v4fchat')
+  if (!hasAi) {
+    $('#aiStatusBadge').textContent = '未加载'
+    $('#aiStatusBadge').className = 'badge badge-stopped'
+  }
 }
 
 // ===== 系统设置 =====

@@ -187,6 +187,26 @@ td { font-size: 13px; }
 .settings-modal label { display: block; font-size: 13px; color: var(--text-muted); }
 .settings-modal label input { margin-top: 4px; }
 
+/* ===== AI 面板 ===== */
+.ai-body { display: flex; gap: 0; height: 380px; }
+.ai-log-section { flex: 1; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+.ai-log {
+  flex: 1; overflow-y: auto; padding: 10px 14px;
+  font-size: 13px; line-height: 1.8; background: var(--bg);
+}
+.ai-config-section {
+  width: 320px; padding: 14px 16px; display: flex; flex-direction: column;
+  overflow-y: auto; font-size: 13px; color: var(--text-muted);
+}
+.ai-textarea {
+  width: 100%; margin-top: 4px; padding: 8px 10px;
+  border: 1px solid var(--border); border-radius: 4px;
+  background: var(--bg); color: var(--text); font-size: 13px;
+  resize: vertical; font-family: inherit;
+}
+.ai-textarea:focus { outline: none; border-color: var(--accent); }
+.ai-stats { border-top: 1px solid var(--border); padding-top: 10px; }
+
 /* ===== 响应式 ===== */
 @media (max-width: 900px) {
   .form-grid { grid-template-columns: 1fr 1fr; }

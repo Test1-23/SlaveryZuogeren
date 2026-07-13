@@ -104,6 +104,39 @@
     </div>
   </div>
 
+  <!-- AI 面板 -->
+  <section id="aiPanel" class="chat-panel hidden" style="margin-top:24px">
+    <div class="chat-header">
+      <h3>AI 控制台</h3>
+      <span id="aiStatusBadge" class="badge badge-stopped">未加载</span>
+      <select id="aiBotSelect" class="inp inp-sm" onchange="switchAiBot()"></select>
+      <button class="btn-sm" onclick="testAiConnection()">测试连接</button>
+      <button class="btn-sm" onclick="clearAiHistory()">清空历史</button>
+    </div>
+    <div class="ai-body">
+      <!-- 左侧: 对话日志 -->
+      <div class="ai-log-section">
+        <div class="ai-log" id="aiLog">
+          <span class="empty">选择运行中的 bot 查看 AI 活动</span>
+        </div>
+      </div>
+      <!-- 右侧: 配置 -->
+      <div class="ai-config-section">
+        <label>System Prompt
+          <textarea id="aiSystemPrompt" class="ai-textarea" rows="6" placeholder="输入 system prompt..."></textarea>
+        </label>
+        <label style="margin-top:8px">上下文轮数
+          <input type="number" id="aiMaxHistory" class="inp inp-sm" value="10" min="1" max="50" style="width:80px">
+        </label>
+        <div style="margin-top:8px">
+          <button class="btn-primary btn-sm" onclick="saveAiConfig()">保存配置</button>
+          <span id="aiSaveMsg" style="font-size:12px;margin-left:8px;color:var(--green)"></span>
+        </div>
+        <div class="ai-stats" id="aiStats" style="margin-top:14px;font-size:12px;color:var(--text-muted)"></div>
+      </div>
+    </div>
+  </section>
+
   <script src="app.js"></script>
 </body>
 </html>
