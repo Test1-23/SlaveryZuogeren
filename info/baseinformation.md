@@ -1,6 +1,8 @@
 # Mineflayer 对外接口文档 (Public API Reference)
 
 > 本文档记录 mineflayer v4.37.1 所有对外接口、作用、实现方式及源码地址。
+>
+> **Bot 应用层 API 见 [README.md](../README.md)** — 机器人管理系统提供的 13 个 REST 端点、5 个编程接口导出、66 个测试用例。
 
 ---
 

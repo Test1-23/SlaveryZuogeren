@@ -37,7 +37,7 @@ npm start
 │   ├── moduleLoader.js     # 模块加载器
 │   ├── moduleRegistry.js   # 模块注册表类
 │   ├── modules/            # 功能模块目录
-│   │   └── echo/           # 示例：聊天回显模块
+│   │   └── chat/           # 聊天消息捕获与发送
 │   ├── web/
 │   │   ├── server.js       # Express 服务器（装配路由）
 │   │   ├── routes/         # API 路由模块
@@ -51,7 +51,7 @@ npm start
 └── info/                   # 项目文档
 ```
 
-## API 端点
+## API 端点 (13 个)
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
@@ -59,7 +59,10 @@ npm start
 | POST | `/api/bots/start` | 按配置 ID 启动机器人 `{ configId }` |
 | POST | `/api/bots/stop/:id` | 停止指定机器人 |
 | POST | `/api/bots/remove-dead/:id` | 清理已断连的僵尸条目 |
+| GET | `/api/bots/:id/chat` | 获取指定机器人的聊天消息历史 |
+| POST | `/api/bots/:id/chat` | 以机器人身份发送聊天 `{ message }` |
 | GET | `/api/configs` | 所有配置列表 |
+| GET | `/api/configs/:id` | 单个配置详情 |
 | POST | `/api/configs` | 新建配置 |
 | PUT | `/api/configs/:id` | 更新配置 |
 | DELETE | `/api/configs/:id` | 删除配置 |
@@ -88,7 +91,7 @@ npm start
 
 ```js
 module.exports = {
-  name: 'echo',              // 唯一标识
+  name: 'chat',              // 唯一标识
   version: '1.0.0',
   dependencies: [],           // 依赖的其他模块名
   inject(bot, options) {},    // 初始化：注册事件、挂载方法
@@ -96,13 +99,13 @@ module.exports = {
 }
 ```
 
-参考 `bot/modules/echo/` 了解完整示例。运行时动态管理：
+参考 `bot/modules/chat/` 了解完整示例。运行时动态管理：
 
 ```js
-bot.moduleLoader.load('moduleName')   // 加载模块
-bot.moduleLoader.unload('moduleName') // 卸载模块
-bot.moduleLoader.list()              // 列出可用模块
-bot.moduleLoader.loaded()            // 已加载的模块
+bot.moduleLoader.load('chat')   // 加载模块
+bot.moduleLoader.unload('chat') // 卸载模块
+bot.moduleLoader.list()         // 列出可用模块
+bot.moduleLoader.loaded()       // 已加载的模块
 ```
 
 ## 编程接口
@@ -120,7 +123,7 @@ const bot = createBot({
   version: '1.21.11',
   auth: 'offline',
   username: 'MyBot',
-  modules: ['echo']
+  modules: ['chat']
 })
 
 // 用管理器启动（自动注册到仪表盘）
@@ -131,10 +134,10 @@ await manager.startBot(config)
 ## 测试
 
 ```bash
-npm test                 # 全部 65 个测试 (单元 + 集成)
-npm run test:unit        # 仅单元测试 (31)
-npm run test:integration # 仅集成测试 (34)
-npm run test:e2e         # 端到端测试 (需 Minecraft 服务器)
+npm test                 # 全部 66 个测试 (单元 + 集成)
+npm run test:unit        # 仅单元测试 (30): botState+moduleRegistry+database
+npm run test:integration # 仅集成测试 (36): moduleLoader+manager+web
+npm run test:e2e         # 端到端测试 (需 Minecraft 服务器运行)
 ```
 
 ## 技术栈
