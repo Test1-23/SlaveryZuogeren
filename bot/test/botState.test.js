@@ -38,7 +38,7 @@ describe('botState.snapshot()', () => {
     assert.strictEqual(s.pitch, 0)
     assert.strictEqual(s.isAlive, true)
     assert.strictEqual(s.isSleeping, false)
-    assert.deepStrictEqual(s.modules, [{ name: 'echo', version: '1.0.0' }])
+    assert.deepStrictEqual(s.modules, [{ name: 'chat', version: '1.0.0' }])
   })
 
   it('bot 缺少 game → 使用默认值', () => {

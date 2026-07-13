@@ -46,7 +46,7 @@ describe('Web + Bot E2E', function () {
     // 创建
     const createRes = await request(server)
       .post('/api/configs')
-      .send({ name: 'E2E_Test', host: HOST, port: PORT, version: VERSION, auth: 'offline', username: 'E2E_Web_' + Date.now().toString(36), modules: ['echo'] })
+      .send({ name: 'E2E_Test', host: HOST, port: PORT, version: VERSION, auth: 'offline', username: 'E2E_Web_' + Date.now().toString(36), modules: ['chat'] })
       .expect(201)
     const configId = createRes.body.id
     assert.ok(configId > 0)

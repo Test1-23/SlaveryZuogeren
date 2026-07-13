@@ -1,4 +1,8 @@
 const $ = (s) => document.querySelector(s)
+const $$ = (s) => document.querySelectorAll(s)
+
+let _activeChatBot = null
+let _chatPollTimer = null
 
 // ===== SSE =====
 
@@ -29,13 +33,10 @@ function buildModulePick (dropId, modules) {
 function toggleModulePick (pickId) {
   const drop = $('#' + pickId + 'Drop')
   drop.classList.toggle('show')
-  // 点击外部关闭
   const handler = (e) => {
     if (!e.target.closest('#' + pickId)) { drop.classList.remove('show'); document.removeEventListener('click', handler) }
   }
-  if (drop.classList.contains('show')) {
-    setTimeout(() => document.addEventListener('click', handler), 0)
-  }
+  if (drop.classList.contains('show')) setTimeout(() => document.addEventListener('click', handler), 0)
 }
 
 function getCheckedModules (dropId) {
@@ -63,7 +64,7 @@ async function loadConfigList () {
   `).join('')
 }
 
-// ===== 快速新建并启动 =====
+// ===== 快速新建 =====
 
 async function quickCreateAndStart () {
   const cfg = _readForm()
@@ -107,7 +108,7 @@ function _clearForm () {
   $$('#qeModulesDrop input[type=checkbox]').forEach(cb => cb.checked = false)
 }
 
-// ===== 启动 / 停止 / 清理 =====
+// ===== Bot 操作 =====
 
 async function launchBot (configId) {
   try {
@@ -125,6 +126,7 @@ async function stopBot (id) {
   try {
     const res = await fetch(`/api/bots/stop/${id}`, { method: 'POST' })
     if (!res.ok) throw new Error((await res.json()).error)
+    if (_activeChatBot === id) { _activeChatBot = null; updateChatPanel([]) }
   } catch (err) { alert('停止失败: ' + err.message) }
 }
 
@@ -138,31 +140,106 @@ function renderBots (bots) {
   $('#botCount').textContent = `运行中: ${bots.length}`
   const tbody = $('#botTable tbody')
   if (bots.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="11" class="empty">没有运行中的机器人</td></tr>'
+    tbody.innerHTML = '<tr><td colspan="10" class="empty">没有运行中的机器人</td></tr>'
+  } else {
+    tbody.innerHTML = bots.map(b => `
+      <tr>
+        <td><strong>${esc(b.name)}</strong></td>
+        <td>${esc(b.username)}</td>
+        <td>${esc(b.host)}:${b.port}</td>
+        <td><span class="badge badge-${b.status}">${b.status}</span>${b.error ? `<br><small>${esc(b.error)}</small>` : ''}</td>
+        <td>${b.health ?? '?'}</td>
+        <td>${b.food ?? '?'}</td>
+        <td>${b.position ? `${b.position.x} ${b.position.y} ${b.position.z}` : '?'}</td>
+        <td>${b.dimension ?? '?'}</td>
+        <td>${elapsed(b.startedAt)}</td>
+        <td>
+          ${b.status === 'online' || b.status === 'connecting'
+            ? `<button class="btn-stop" onclick="stopBot('${b.id}')">停止</button>`
+            : `<button class="btn-danger" onclick="removeDead('${b.id}')">清除</button>`}
+          ${b.status === 'online' ? `<button class="btn-edit" style="margin-left:4px" onclick="openChat('${b.id}','${esc(b.name)}')">聊天</button>` : ''}
+        </td>
+      </tr>
+    `).join('')
+  }
+  // 更新聊天面板的 bot 选择器
+  const sel = $('#chatBotSelect')
+  const online = bots.filter(b => b.status === 'online')
+  sel.innerHTML = online.map(b => `<option value="${b.id}">${esc(b.name)} (${esc(b.username)})</option>`).join('')
+  if (online.length === 0) {
+    $('#chatPanel').classList.add('hidden')
+    _activeChatBot = null
+    clearInterval(_chatPollTimer)
+  } else if (!_activeChatBot || !online.find(b => b.id === _activeChatBot)) {
+    // 默认选第一个在线 bot
+    if (online[0]) openChat(online[0].id, online[0].name)
+  }
+}
+
+// ===== 聊天面板 =====
+
+function openChat (botId, name) {
+  _activeChatBot = botId
+  $('#chatBotSelect').value = botId
+  $('#chatPanel').classList.remove('hidden')
+  $('#chatMessages').innerHTML = '<span class="empty">加载中...</span>'
+  fetchChat()
+  clearInterval(_chatPollTimer)
+  _chatPollTimer = setInterval(fetchChat, 1000)
+}
+
+function switchChatBot () {
+  const id = $('#chatBotSelect').value
+  if (id) openChat(id, '')
+}
+
+async function fetchChat () {
+  if (!_activeChatBot) return
+  const msgs = await fetch(`/api/bots/${_activeChatBot}/chat`).then(r => r.json()).catch(() => [])
+  updateChatPanel(msgs)
+}
+
+function updateChatPanel (msgs) {
+  const el = $('#chatMessages')
+  const wasAtBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 10
+  if (!msgs || msgs.length === 0) {
+    el.innerHTML = '<span class="empty">暂无消息</span>'
     return
   }
-  tbody.innerHTML = bots.map(b => `
-    <tr>
-      <td><strong>${esc(b.name)}</strong></td>
-      <td>${esc(b.username)}</td>
-      <td>${esc(b.host)}:${b.port}</td>
-      <td><span class="badge badge-${b.status}">${b.status}</span>${b.error ? `<br><small>${esc(b.error)}</small>` : ''}</td>
-      <td>${b.health ?? '?'}</td>
-      <td>${b.food ?? '?'}</td>
-      <td>${b.position ? `${b.position.x} ${b.position.y} ${b.position.z}` : '?'}</td>
-      <td>${b.dimension ?? '?'}</td>
-      <td>${b.gameMode ?? '?'}</td>
-      <td>${elapsed(b.startedAt)}</td>
-      <td>
-        ${b.status === 'online' || b.status === 'connecting'
-          ? `<button class="btn-stop" onclick="stopBot('${b.id}')">停止</button>`
-          : b.status === 'stopped' || b.status === 'kicked' || b.status === 'error'
-            ? `<button class="btn-danger" onclick="removeDead('${b.id}')">清除</button>`
-            : ''}
-      </td>
-    </tr>
-  `).join('')
+  el.innerHTML = msgs.map(m => {
+    const time = new Date(m.timestamp).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    if (m.type === 'player') {
+      return `<div class="chat-msg"><span class="chat-time">${time}</span> <span class="chat-user">${esc(m.username)}</span>: ${esc(m.message)}</div>`
+    }
+    if (m.type === 'whisper') {
+      return `<div class="chat-msg chat-whisper"><span class="chat-time">${time}</span> <span class="chat-user">${esc(m.username)}</span> → 你: ${esc(m.message)}</div>`
+    }
+    return `<div class="chat-msg chat-system"><span class="chat-time">${time}</span> ${esc(m.message)}</div>`
+  }).join('')
+  if (wasAtBottom) el.scrollTop = el.scrollHeight
 }
+
+async function sendChat () {
+  const input = $('#chatInput')
+  const msg = input.value.trim()
+  if (!msg || !_activeChatBot) return
+  input.value = ''
+  try {
+    const res = await fetch(`/api/bots/${_activeChatBot}/chat`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg })
+    })
+    if (!res.ok) throw new Error((await res.json()).error)
+    // 立即刷新
+    fetchChat()
+  } catch (err) { alert('发送失败: ' + err.message) }
+}
+
+function clearChat () {
+  $('#chatMessages').innerHTML = '<span class="empty">暂无消息</span>'
+}
+
+// ===== 工具函数 =====
 
 function esc (s) { return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]) }
 

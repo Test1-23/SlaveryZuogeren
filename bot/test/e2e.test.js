@@ -48,38 +48,26 @@ describe('E2E: Real Minecraft 26.2 Server', function () {
     })
   })
 
-  it('echo 模块加载并回显消息', function (done) {
-    const username = 'EchoTest_' + Date.now().toString(36)
+  it('chat 模块捕获消息并允许发送', function (done) {
+    const username = 'ChatTest_' + Date.now().toString(36)
     bot = createBot({
       host: HOST,
       port: PORT,
       version: VERSION,
       auth: 'offline',
       username,
-      modules: ['echo']
+      modules: ['chat']
     })
 
-    let echoed = false
+    bot.once('ready', () => {
+      assert.ok(Array.isArray(bot.chatMessages), 'chatMessages 数组应存在')
+      assert.strictEqual(typeof bot.sendChat, 'function', 'sendChat 方法应存在')
+      const loaded = bot.moduleLoader.loaded()
+      assert.ok(loaded.find(m => m.name === 'chat'), 'chat 模块应已加载')
 
-    bot.on('chat', (sender, msg) => {
-      if (sender === username && msg.includes('[Echo]')) {
-        echoed = true
-      }
-    })
-
-    bot.once('ready', async () => {
-      // Bot 对自己发送 echo 命令，验证模块回复
-      bot.chat('echo hello e2e')
-
-      // 等待回显
-      setTimeout(() => {
-        // echo 模块忽略自身消息，需要其他玩家发 echo
-        // 改用 bot.chat 直接测试: 模块监听 chat 事件
-        // 由于只有 bot 自己在服务器，我们检查模块是否正确加载
-        const loaded = bot.moduleLoader.loaded()
-        assert.ok(loaded.find(m => m.name === 'echo'), 'echo 模块应已加载')
-        done()
-      }, 2000)
+      // 发送消息验证 sendChat 可用
+      bot.sendChat('e2e test message')
+      done()
     })
 
     bot.on('error', (err) => done(new Error(err.message)))
@@ -136,12 +124,12 @@ describe('E2E: Real Minecraft 26.2 Server', function () {
       version: VERSION,
       auth: 'offline',
       username: 'DisconnectTest_' + Date.now().toString(36),
-      modules: ['echo']
+      modules: ['chat']
     })
 
     bot.once('ready', () => {
       const before = bot.moduleLoader.loaded().length
-      assert.ok(before >= 1, '至少应有 echo 模块加载')
+      assert.ok(before >= 1, '至少应有 chat 模块加载')
 
       bot.end('test disconnect')
       // end 事件 handler 会异步 unload 模块

@@ -31,6 +31,25 @@ function mount (app, { manager, database }) {
     try { manager.removeDead(req.params.id); res.json({ success: true }) } catch (e) { res.status(400).json({ error: e.message }) }
   })
 
+  // ── Chat ──
+
+  r.get('/:id/chat', (req, res) => {
+    const bot = manager.getBot(req.params.id)
+    if (!bot) return res.status(404).json({ error: 'Bot 不存在' })
+    const msgs = bot.chatMessages || []
+    res.json(msgs)
+  })
+
+  r.post('/:id/chat', (req, res) => {
+    const bot = manager.getBot(req.params.id)
+    if (!bot) return res.status(404).json({ error: 'Bot 不存在' })
+    const { message } = req.body
+    if (!message) return res.status(400).json({ error: '消息不能为空' })
+    if (typeof bot.sendChat !== 'function') return res.status(400).json({ error: 'Chat 模块未加载' })
+    bot.sendChat(message)
+    res.json({ success: true })
+  })
+
   app.use('/api/bots', r)
 }
 

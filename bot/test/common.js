@@ -25,7 +25,7 @@ function fakeBot (overrides = {}) {
     isAlive: true,
     isSleeping: false,
     moduleLoader: {
-      loaded: () => [{ name: 'echo', version: '1.0.0' }]
+      loaded: () => [{ name: 'chat', version: '1.0.0' }]
     },
     _moduleRegistry: null, // placeholder for moduleLoader
     chat: () => {}, // no-op
@@ -69,7 +69,7 @@ function fakeManager (overrides = {}) {
  */
 function fakeModuleLoader (overrides = {}) {
   return {
-    listModules: () => ['echo'],
+    listModules: () => ['chat'],
     getLoadedModules: () => [],
     loadModule: () => { throw new Error('not implemented') },
     unloadModule: () => { throw new Error('not implemented') },

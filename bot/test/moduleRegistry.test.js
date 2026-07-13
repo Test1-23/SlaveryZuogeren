@@ -18,29 +18,29 @@ describe('ModuleRegistry', () => {
   })
 
   it('register → has/get/loaded/count 正确反映', () => {
-    reg.register({ name: 'echo', version: '1.0.0', dependencies: [] })
+    reg.register({ name: 'chat', version: '1.0.0', dependencies: [] })
     assert.strictEqual(reg.count, 1)
-    assert.strictEqual(reg.has('echo'), true)
+    assert.strictEqual(reg.has('chat'), true)
     assert.strictEqual(reg.has('nonexistent'), false)
-    assert.deepStrictEqual(reg.list(), ['echo'])
-    assert.deepStrictEqual(reg.loaded, [{ name: 'echo', version: '1.0.0' }])
-    assert.strictEqual(reg.get('echo').version, '1.0.0')
+    assert.deepStrictEqual(reg.list(), ['chat'])
+    assert.deepStrictEqual(reg.loaded, [{ name: 'chat', version: '1.0.0' }])
+    assert.strictEqual(reg.get('chat').version, '1.0.0')
     assert.strictEqual(reg.get('nonexistent'), null)
   })
 
   it('重复 register 返回 false，不覆盖', () => {
-    reg.register({ name: 'echo', version: '1.0.0', dependencies: [] })
-    const ok = reg.register({ name: 'echo', version: '2.0.0', dependencies: ['a'] })
+    reg.register({ name: 'chat', version: '1.0.0', dependencies: [] })
+    const ok = reg.register({ name: 'chat', version: '2.0.0', dependencies: ['a'] })
     assert.strictEqual(ok, false)
     assert.strictEqual(reg.count, 1)
-    assert.strictEqual(reg.get('echo').version, '1.0.0')
+    assert.strictEqual(reg.get('chat').version, '1.0.0')
   })
 
   it('unregister 移除模块', () => {
-    reg.register({ name: 'echo', version: '1.0.0', dependencies: [] })
-    reg.unregister('echo')
+    reg.register({ name: 'chat', version: '1.0.0', dependencies: [] })
+    reg.unregister('chat')
     assert.strictEqual(reg.count, 0)
-    assert.strictEqual(reg.has('echo'), false)
+    assert.strictEqual(reg.has('chat'), false)
   })
 
   it('unregister 不存在的不抛异常', () => {

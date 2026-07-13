@@ -58,13 +58,29 @@
         <thead>
           <tr>
             <th>备注名</th><th>用户名</th><th>服务器</th><th>状态</th><th>生命</th><th>饥饿</th>
-            <th>坐标</th><th>维度</th><th>模式</th><th>运行</th><th>操作</th>
+            <th>坐标</th><th>维度</th><th>运行</th><th>操作</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td colspan="11" class="empty">没有运行中的机器人</td></tr>
+          <tr><td colspan="10" class="empty">没有运行中的机器人</td></tr>
         </tbody>
       </table>
+    </section>
+
+    <!-- 聊天面板 -->
+    <section id="chatPanel" class="chat-panel hidden">
+      <div class="chat-header">
+        <h3>服务器消息</h3>
+        <select id="chatBotSelect" class="inp inp-sm" onchange="switchChatBot()"></select>
+        <button class="btn-sm" onclick="clearChat()">清屏</button>
+      </div>
+      <div class="chat-messages" id="chatMessages">
+        <span class="empty">暂无消息</span>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" class="inp" placeholder="输入消息，回车发送..." onkeydown="if(event.key==='Enter')sendChat()" autofocus>
+        <button class="btn-primary" onclick="sendChat()">发送</button>
+      </div>
     </section>
   </main>
 

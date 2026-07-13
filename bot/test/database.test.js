@@ -35,14 +35,14 @@ describe('Database CRUD', () => {
   })
 
   it('createConfig → getConfig → 数据往返一致', () => {
-    const c = database.createConfig({ name: 'Test', host: 'example.com', port: 25566, auth: 'microsoft', username: 'Player1', modules: ['echo'], options: { chat: 'commandsOnly' } })
+    const c = database.createConfig({ name: 'Test', host: 'example.com', port: 25566, auth: 'microsoft', username: 'Player1', modules: ['chat'], options: { chat: 'commandsOnly' } })
     assert.strictEqual(typeof c.id, 'number')
     assert.strictEqual(c.name, 'Test')
     assert.strictEqual(c.host, 'example.com')
     assert.strictEqual(c.port, 25566)
     assert.strictEqual(c.auth, 'microsoft')
     assert.strictEqual(c.username, 'Player1')
-    assert.deepStrictEqual(c.modules, ['echo'])
+    assert.deepStrictEqual(c.modules, ['chat'])
     assert.deepStrictEqual(c.options, { chat: 'commandsOnly' })
 
     const fetched = database.getConfig(c.id)

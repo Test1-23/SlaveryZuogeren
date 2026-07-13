@@ -25,14 +25,14 @@ describe('Web API', function () {
     })
 
     database = fakeDatabase({
-      getAllConfigs: () => [{ id: 1, name: 'MyBot', host: 'localhost', port: 25565, auth: 'offline', username: 'Bot', modules: ['echo'], options: {} }],
-      getConfig: (id) => id === 1 ? { id: 1, name: 'MyBot', host: 'localhost', port: 25565, version: '26.2', auth: 'offline', username: 'Bot', modules: ['echo'], options: {} } : null,
+      getAllConfigs: () => [{ id: 1, name: 'MyBot', host: 'localhost', port: 25565, auth: 'offline', username: 'Bot', modules: ['chat'], options: {} }],
+      getConfig: (id) => id === 1 ? { id: 1, name: 'MyBot', host: 'localhost', port: 25565, version: '26.2', auth: 'offline', username: 'Bot', modules: ['chat'], options: {} } : null,
       createConfig: (cfg) => ({ id: 2, ...cfg, modules: cfg.modules || [], options: cfg.options || {} }),
       updateConfig: (id, cfg) => ({ id, name: cfg.name || 'Updated', host: cfg.host || 'localhost', port: cfg.port || 25565, auth: 'offline', username: 'Bot', modules: [], options: {} }),
       deleteConfig: () => true
     })
 
-    moduleLoader = fakeModuleLoader({ listModules: () => ['echo', 'guard'] })
+    moduleLoader = fakeModuleLoader({ listModules: () => ['chat', 'guard'] })
 
     const { app } = createServer({ manager, database, moduleLoader, port: 0 })
     server = app
@@ -102,7 +102,7 @@ describe('Web API', function () {
 
   it('GET /api/modules → 返回模块列表', async () => {
     const res = await request(server).get('/api/modules').expect(200)
-    assert.deepStrictEqual(res.body, ['echo', 'guard'])
+    assert.deepStrictEqual(res.body, ['chat', 'guard'])
   })
 
   // ─── SSE ───

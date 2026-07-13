@@ -22,6 +22,12 @@ class BotManager extends EventEmitter {
 
   get count () { return this._bots.size }
 
+  /** 获取 bot 实例 (供内部模块访问 chatMessages 等) */
+  getBot (id) {
+    const entry = this._bots.get(id)
+    return entry?.bot ?? null
+  }
+
   getBots () {
     return Array.from(this._bots.values()).map(e => this._snapshot(e))
   }
