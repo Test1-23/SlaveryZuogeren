@@ -17,7 +17,8 @@ function mount (app, { manager, database }) {
       if (!config) return res.status(404).json({ error: `配置 ${configId} 不存在` })
       const dup = manager.getBots().find(b => b.configId === Number(configId) && (b.status === 'online' || b.status === 'connecting'))
       if (dup) return res.status(409).json({ error: `已在运行中 (${dup.id})` })
-      res.json(await manager.startBot(config))
+      const entry = await manager.startBot(config)
+      res.json(manager.getBots().find(b => b.id === entry.id) || entry)
     } catch (err) {
       res.status(500).json({ error: err.message })
     }
