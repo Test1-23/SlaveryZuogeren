@@ -25,9 +25,32 @@ async function loadModules () {
 
 function buildModulePick (dropId, modules) {
   if (!modules.length) { $('#' + dropId).innerHTML = '<span class="mp-empty">暂无可用模块</span>'; return }
-  $('#' + dropId).innerHTML = modules.map(m => `
-    <label class="mp-item"><input type="checkbox" value="${esc(m)}"> ${esc(m)}</label>
-  `).join('')
+  $('#' + dropId).innerHTML = modules.map(m => {
+    const name = typeof m === 'string' ? m : m.name
+    const deps = m.dependencies || []
+    const isSub = deps.length > 0
+    const parent = isSub ? deps[0] : null
+    return `<label class="mp-item${isSub ? ' mp-sub' : ''}" data-depends="${parent || ''}">
+      <input type="checkbox" value="${esc(name)}" ${isSub ? `data-depends="${esc(parent)}"` : ''}> ${esc(name)}
+      ${isSub ? `<span class="mp-dep-tag">依赖 ${esc(parent)}</span>` : ''}
+    </label>`
+  }).join('')
+
+  // 联动：勾选父模块时自动启用子模块，取消父模块时自动禁用子模块
+  $$('#' + dropId + ' input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const parent = cb.value
+      $$('#' + dropId + ' input[data-depends="' + parent + '"]').forEach(sub => {
+        sub.disabled = !cb.checked
+        if (!cb.checked) sub.checked = false
+      })
+    })
+    // 初始状态
+    if (cb.dataset.depends) {
+      const p = $('#' + dropId + ' input[value="' + cb.dataset.depends + '"]')
+      if (p) cb.disabled = !p.checked
+    }
+  })
 }
 
 function toggleModulePick (pickId) {
@@ -323,6 +346,33 @@ function elapsed (start) {
   const diff = Date.now() - new Date(start).getTime()
   const m = Math.floor(diff / 60000)
   return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`
+}
+
+// ===== 系统设置 =====
+
+async function showSettings () {
+  const cfg = await fetch('/api/settings').then(r => r.json()).catch(() => ({}))
+  $('#setApiKey').value = cfg.deepseekApiKey || ''
+  $('#setModel').value = cfg.deepseekModel || 'deepseek-v4-flash'
+  $('#settingsOverlay').classList.remove('hidden')
+}
+
+function hideSettings () {
+  $('#settingsOverlay').classList.add('hidden')
+}
+
+async function saveSettings () {
+  try {
+    const res = await fetch('/api/settings', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        deepseekApiKey: $('#setApiKey').value.trim(),
+        deepseekModel: $('#setModel').value.trim() || 'deepseek-v4-flash'
+      })
+    })
+    if (!res.ok) throw new Error((await res.json()).error)
+    hideSettings()
+  } catch (err) { alert('保存失败: ' + err.message) }
 }
 
 // ===== 初始化 =====

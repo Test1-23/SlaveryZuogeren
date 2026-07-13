@@ -69,7 +69,7 @@ function fakeManager (overrides = {}) {
  */
 function fakeModuleLoader (overrides = {}) {
   return {
-    listModules: () => ['chat'],
+    listModules: () => [{ name: 'chat', version: '1.0.0', dependencies: [] }],
     getLoadedModules: () => [],
     loadModule: () => { throw new Error('not implemented') },
     unloadModule: () => { throw new Error('not implemented') },

@@ -12,6 +12,7 @@
     <div class="nav-links">
       <a href="/" class="active">仪表盘</a>
       <a href="config.html">配置管理</a>
+      <a href="#" onclick="showSettings();return false">设置</a>
     </div>
   </nav>
 
@@ -85,6 +86,23 @@
       </div>
     </section>
   </main>
+
+  <!-- 设置弹窗 -->
+  <div id="settingsOverlay" class="overlay hidden" onclick="if(event.target===this)hideSettings()">
+    <div class="settings-modal">
+      <h3>系统设置</h3>
+      <label>DeepSeek API Key
+        <input type="password" id="setApiKey" class="inp" placeholder="sk-..." style="width:100%">
+      </label>
+      <label style="margin-top:8px">Model
+        <input type="text" id="setModel" class="inp" value="deepseek-v4-flash" style="width:100%">
+      </label>
+      <div class="editor-actions" style="margin-top:14px">
+        <button class="btn-primary" onclick="saveSettings()">保存</button>
+        <button onclick="hideSettings()">取消</button>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

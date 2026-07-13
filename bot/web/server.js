@@ -10,6 +10,7 @@ const bots = require('./routes/bots')
 const configs = require('./routes/configs')
 const modules = require('./routes/modules')
 const sse = require('./routes/sse')
+const settings = require('./routes/settings')
 
 function createServer ({ manager, database, moduleLoader, port = 3000 }) {
   const app = express()
@@ -22,6 +23,7 @@ function createServer ({ manager, database, moduleLoader, port = 3000 }) {
   configs.mount(app, deps)
   modules.mount(app, deps)
   sse.mount(app, deps)
+  settings.mount(app)
 
   function start () {
     return new Promise(resolve => app.listen(port, () => { console.log(`[Web] http://localhost:${port}`); resolve() }))

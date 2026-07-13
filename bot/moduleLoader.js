@@ -20,13 +20,20 @@ const MODULES_DIR = path.join(__dirname, 'modules')
 
 /**
  * 扫描可用模块
- * @returns {string[]}
+ * @returns {{name: string, version: string, dependencies: string[]}[]}
  */
 function listModules () {
   if (!fs.existsSync(MODULES_DIR)) return []
   return fs.readdirSync(MODULES_DIR, { withFileTypes: true })
     .filter(d => d.isDirectory() && !d.name.startsWith('.'))
-    .map(d => d.name)
+    .map(d => {
+      try {
+        const mod = require(path.join(MODULES_DIR, d.name, 'index.js'))
+        return { name: mod.name || d.name, version: mod.version || '0.0.0', dependencies: mod.dependencies || [] }
+      } catch {
+        return { name: d.name, version: '?', dependencies: [] }
+      }
+    })
 }
 
 /**

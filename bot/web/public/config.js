@@ -14,9 +14,29 @@ async function loadModules () {
 
 function buildModulePick (dropId, modules) {
   if (!modules.length) { $('#' + dropId).innerHTML = '<span class="mp-empty">暂无可用模块</span>'; return }
-  $('#' + dropId).innerHTML = modules.map(m => `
-    <label class="mp-item"><input type="checkbox" value="${esc(m)}"> ${esc(m)}</label>
-  `).join('')
+  $('#' + dropId).innerHTML = modules.map(m => {
+    const name = typeof m === 'string' ? m : m.name
+    const deps = m.dependencies || []
+    const isSub = deps.length > 0
+    const parent = isSub ? deps[0] : null
+    return `<label class="mp-item${isSub ? ' mp-sub' : ''}" data-depends="${parent || ''}">
+      <input type="checkbox" value="${esc(name)}" ${isSub ? `data-depends="${esc(parent)}"` : ''}> ${esc(name)}
+      ${isSub ? `<span class="mp-dep-tag">依赖 ${esc(parent)}</span>` : ''}
+    </label>`
+  }).join('')
+
+  $$('#' + dropId + ' input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      $$('#' + dropId + ' input[data-depends="' + cb.value + '"]').forEach(sub => {
+        sub.disabled = !cb.checked
+        if (!cb.checked) sub.checked = false
+      })
+    })
+    if (cb.dataset.depends) {
+      const p = $('#' + dropId + ' input[value="' + cb.dataset.depends + '"]')
+      if (p) cb.disabled = !p.checked
+    }
+  })
 }
 
 function toggleModulePick (pickId) {

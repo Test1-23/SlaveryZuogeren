@@ -32,7 +32,7 @@ describe('Web API', function () {
       deleteConfig: () => true
     })
 
-    moduleLoader = fakeModuleLoader({ listModules: () => ['chat', 'guard'] })
+    moduleLoader = fakeModuleLoader({ listModules: () => [{ name: 'chat', version: '1.0.0', dependencies: [] }, { name: 'v4fchat', version: '1.0.0', dependencies: ['chat'] }] })
 
     const { app } = createServer({ manager, database, moduleLoader, port: 0 })
     server = app
@@ -102,7 +102,8 @@ describe('Web API', function () {
 
   it('GET /api/modules → 返回模块列表', async () => {
     const res = await request(server).get('/api/modules').expect(200)
-    assert.deepStrictEqual(res.body, ['chat', 'guard'])
+    assert.strictEqual(res.body.length, 2)
+    assert.strictEqual(res.body[0].name, 'chat')
   })
 
   // ─── SSE ───

@@ -17,10 +17,13 @@ describe('moduleLoader', () => {
   beforeEach(() => { clearModuleCache(); moduleLoader = require('../moduleLoader') })
   afterEach(() => { clearModuleCache() })
 
-  it('listModules → 返回可用模块 (chat)', () => {
+  it('listModules → 返回可用模块 (含依赖信息)', () => {
     const mods = moduleLoader.listModules()
-    assert.ok(mods.includes('chat'))
     assert.ok(mods.length >= 1)
+    const chatMod = mods.find(m => m.name === 'chat')
+    assert.ok(chatMod)
+    assert.strictEqual(typeof chatMod.version, 'string')
+    assert.ok(Array.isArray(chatMod.dependencies))
   })
 
   it('loadModule + unloadModule → 完整生命周期', async () => {
