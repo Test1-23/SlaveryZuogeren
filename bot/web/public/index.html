@@ -27,9 +27,10 @@
       </div>
     </section>
 
-    <!-- 快速新建 -->
-    <section class="editor compact" id="quickEditor">
-      <h3>快速新建机器人</h3>
+    <!-- 快速新建 / 编辑 -->
+    <section class="editor compact hidden" id="quickEditor">
+      <h3 id="qeTitle">快速新建机器人</h3>
+      <input type="hidden" id="qeEditId">
       <div class="form-inline">
         <input type="text" id="qeName" placeholder="备注名" class="inp">
         <input type="text" id="qeHost" value="localhost" placeholder="IP" class="inp">
@@ -43,8 +44,9 @@
           <button type="button" class="module-pick-btn" onclick="toggleModulePick('qeModules')">选择模块 ▾</button>
           <div class="module-pick-drop" id="qeModulesDrop"></div>
         </div>
-        <button class="btn-primary" onclick="quickCreateAndStart()">创建并启动</button>
-        <button class="btn-ghost" onclick="quickSaveOnly()">仅保存</button>
+        <button class="btn-primary" id="qeSaveStartBtn" onclick="quickCreateAndStart()">创建并启动</button>
+        <button class="btn-ghost" id="qeSaveBtn" onclick="quickSaveOnly()">仅保存</button>
+        <button class="btn-ghost" onclick="cancelEdit()">取消</button>
       </div>
     </section>
 

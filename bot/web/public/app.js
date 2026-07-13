@@ -59,7 +59,10 @@ async function loadConfigList () {
         <span>${esc(c.host)}:${c.port} · ${c.version || '自动'} · ${esc(c.username)}</span>
         <span class="qs-modules">${(c.modules || []).join(', ') || '无模块'}</span>
       </div>
-      <button class="btn-start" onclick="launchBot(${c.id})">启动</button>
+      <div class="qs-actions">
+        <button class="btn-start" onclick="launchBot(${c.id})">启动</button>
+        <button class="btn-edit" onclick="startEdit(${c.id})">编辑</button>
+      </div>
     </div>
   `).join('')
 }
@@ -106,6 +109,78 @@ async function _saveConfig (cfg) {
 function _clearForm () {
   $('#qeName').value = ''
   $$('#qeModulesDrop input[type=checkbox]').forEach(cb => cb.checked = false)
+}
+
+// ===== 编辑已保存配置 =====
+
+async function startEdit (configId) {
+  const cfg = await fetch(`/api/configs/${configId}`).then(r => r.json())
+  if (cfg.error) return alert('加载失败: ' + cfg.error)
+  $('#qeEditId').value = cfg.id
+  $('#qeTitle').textContent = '编辑: ' + cfg.name
+  $('#qeName').value = cfg.name
+  $('#qeHost').value = cfg.host
+  $('#qePort').value = cfg.port
+  $('#qeVersion').value = cfg.version || ''
+  $('#qeAuth').value = cfg.auth
+  $('#qeUsername').value = cfg.username
+  setCheckedModules('qeModulesDrop', cfg.modules || [])
+  $('#qeSaveStartBtn').textContent = '保存并启动'
+  $('#qeSaveBtn').textContent = '保存修改'
+  $('#quickEditor').classList.remove('hidden')
+  $('#quickEditor').scrollIntoView({ behavior: 'smooth' })
+}
+
+function cancelEdit () {
+  $('#qeEditId').value = ''
+  $('#qeTitle').textContent = '快速新建机器人'
+  $('#qeSaveStartBtn').textContent = '创建并启动'
+  $('#qeSaveBtn').textContent = '仅保存'
+  _clearForm()
+  $('#quickEditor').classList.add('hidden')
+}
+
+async function quickCreateAndStart () {
+  const eid = $('#qeEditId').value
+  if (eid) {
+    // 编辑模式：先保存再启动
+    const updated = await _saveUpdate(eid)
+    if (!updated) return
+    await launchBot(updated.id)
+    cancelEdit()
+  } else {
+    const cfg = _readForm()
+    if (!cfg.name) return alert('请输入备注名')
+    const created = await _saveConfig(cfg)
+    if (!created) return
+    await launchBot(created.id)
+  }
+}
+
+async function quickSaveOnly () {
+  const eid = $('#qeEditId').value
+  if (eid) {
+    await _saveUpdate(eid)
+    cancelEdit()
+    loadConfigList()
+  } else {
+    const cfg = _readForm()
+    if (!cfg.name) return alert('请输入备注名')
+    await _saveConfig(cfg)
+    _clearForm()
+    loadConfigList()
+  }
+}
+
+async function _saveUpdate (id) {
+  const data = _readForm()
+  if (!data.name) { alert('备注名不能为空'); return null }
+  const res = await fetch(`/api/configs/${id}`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(r => r.json())
+  if (res.error) { alert('保存失败: ' + res.error); return null }
+  return res
 }
 
 // ===== Bot 操作 =====
