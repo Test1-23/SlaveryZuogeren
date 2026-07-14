@@ -381,9 +381,31 @@ function openAi (botId) {
   _activeAiBot = botId
   $('#aiBotSelect').value = botId
   $('#aiPanel').classList.remove('hidden')
+  loadAiConfig() // 初始加载配置字段
   fetchAiState()
   clearInterval(_aiPollTimer)
   _aiPollTimer = setInterval(fetchAiState, 2000)
+}
+
+async function loadAiConfig () {
+  if (!_activeAiBot) return
+  const data = await fetch(`/api/bots/${_activeAiBot}/ai`).then(r => r.json()).catch(() => null)
+  if (data && data.context) {
+    $('#aiSystemPrompt').value = data.context.systemPrompt || ''
+    $('#aiMaxHistory').value = data.context.maxHistory || 10
+  }
+}
+
+function renderAiHistory (data) {
+  if (!data || !data.history || data.history.length === 0) {
+    return
+  }
+  $('#aiLog').innerHTML = data.history.map(h => {
+    const role = h.role === 'user' ? '玩家' : 'AI'
+    const cls = h.role === 'user' ? 'chat-user' : 'chat-system'
+    return `<div class="chat-msg"><span class="chat-time">${new Date(h.timestamp).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span> <span class="${cls}">[${role}]</span> ${esc(h.content)}</div>`
+  }).join('')
+  $('#aiLog').scrollTop = $('#aiLog').scrollHeight
 }
 
 function switchAiBot () {
@@ -403,30 +425,10 @@ async function fetchAiState () {
     updateAiStatusBadge([{ name: 'v4fchat' }])
     $('#aiStatusBadge').textContent = data.status
     $('#aiStatusBadge').className = `badge badge-${data.status === 'ok' || data.status === 'idle' ? 'online' : data.status === 'calling' ? 'connecting' : 'error'}`
-
-    if (data.context) {
-      // 只在用户未编辑时才刷新（避免覆盖正在输入的内容）
-      if (document.activeElement !== $('#aiSystemPrompt')) {
-        $('#aiSystemPrompt').value = data.context.systemPrompt || ''
-      }
-      if (document.activeElement !== $('#aiMaxHistory')) {
-        $('#aiMaxHistory').value = data.context.maxHistory || 10
-      }
-    }
-    if (data.lastError) {
-      $('#aiStats').innerHTML = `<div style="color:var(--red);margin-bottom:4px">错误: ${esc(data.lastError)}</div>` + _statsHtml(data)
-    } else {
-      $('#aiStats').innerHTML = _statsHtml(data)
-    }
-    if (data.history && data.history.length > 0) {
-      $('#aiLog').innerHTML = data.history.map(h => {
-        const role = h.role === 'user' ? '玩家' : 'AI'
-        const cls = h.role === 'user' ? 'chat-user' : 'chat-system'
-        return `<div class="chat-msg"><span class="chat-time">${new Date(h.timestamp).toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span> <span class="${cls}">[${role}]</span> ${esc(h.content)}</div>`
-      }).join('')
-      const el = $('#aiLog')
-      el.scrollTop = el.scrollHeight
-    }
+    $('#aiStats').innerHTML = data.lastError
+      ? `<div style="color:var(--red);margin-bottom:4px">错误: ${esc(data.lastError)}</div>` + _statsHtml(data)
+      : _statsHtml(data)
+    renderAiHistory(data)
   } catch (_) { /* ignore */ }
 }
 
@@ -446,6 +448,9 @@ async function saveAiConfig () {
       body: JSON.stringify(body)
     })
     if (!res.ok) throw new Error((await res.json()).error)
+    // 保存后回填确认
+    $('#aiSystemPrompt').value = body.systemPrompt
+    $('#aiMaxHistory').value = body.maxHistory
     $('#aiSaveMsg').textContent = '已保存'
     setTimeout(() => { $('#aiSaveMsg').textContent = '' }, 2000)
   } catch (err) { alert('保存失败: ' + err.message) }
