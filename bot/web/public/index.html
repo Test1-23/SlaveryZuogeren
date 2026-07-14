@@ -136,8 +136,15 @@
       <!-- 右侧: 配置 -->
       <div class="ai-config-section">
         <label>System Prompt
-          <textarea id="aiSystemPrompt" class="ai-textarea" rows="6" placeholder="输入 system prompt..."></textarea>
+          <textarea id="aiSystemPrompt" class="ai-textarea" rows="4" placeholder="输入 system prompt..."></textarea>
         </label>
+
+        <label style="margin-top:10px">Few-Shot 示例
+          <span style="font-size:11px;color:var(--text-muted)">（对话范例，帮助 AI 学习回复风格）</span>
+        </label>
+        <div id="aiFewshots" style="max-height:200px;overflow-y:auto;margin-top:4px"></div>
+        <button class="btn-sm" onclick="addFewshot()" style="margin-top:4px">+ 添加示例</button>
+
         <label style="margin-top:8px">上下文轮数
           <input type="number" id="aiMaxHistory" class="inp inp-sm" value="10" min="1" max="50" style="width:80px">
         </label>

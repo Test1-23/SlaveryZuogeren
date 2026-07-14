@@ -13,6 +13,7 @@ function mount (app, { manager }) {
     const bot = manager.getBot(req.params.id)
     if (!bot) return res.status(404).json({ error: 'Bot 不存在' })
     if (!bot._ai) return res.json({ status: 'not_loaded', lastError: null, context: null, history: [] })
+    const systemConfig = require('../../systemConfig')
     res.json({
       status: bot._ai.status,
       lastError: bot._ai.lastError,
@@ -20,7 +21,8 @@ function mount (app, { manager }) {
       totalCalls: bot._ai.totalCalls,
       totalErrors: bot._ai.totalErrors,
       context: bot._ai.context,
-      history: bot._ai.history
+      history: bot._ai.history,
+      fewshots: systemConfig.get('aiFewshots') || []
     })
   })
 
@@ -31,7 +33,7 @@ function mount (app, { manager }) {
     if (!bot._ai) return res.status(400).json({ error: 'AI 模块未加载' })
 
     const systemConfig = require('../../systemConfig')
-    const { systemPrompt, maxHistory, clearHistory } = req.body
+    const { systemPrompt, maxHistory, clearHistory, fewshots } = req.body
 
     if (systemPrompt !== undefined) {
       bot._ai.context.systemPrompt = systemPrompt
@@ -42,6 +44,9 @@ function mount (app, { manager }) {
     }
     if (clearHistory) {
       bot._ai.history = []
+    }
+    if (fewshots !== undefined) {
+      systemConfig.update({ aiFewshots: fewshots })
     }
 
     res.json({

@@ -394,6 +394,7 @@ async function loadAiConfig () {
   if (data && data.context) {
     $('#aiSystemPrompt').value = data.context.systemPrompt || ''
     $('#aiMaxHistory').value = data.context.maxHistory || 10
+    renderFewshots(data.fewshots || [])
   }
 }
 
@@ -441,7 +442,8 @@ async function saveAiConfig () {
   if (!_activeAiBot) return
   const body = {
     systemPrompt: $('#aiSystemPrompt').value.trim(),
-    maxHistory: parseInt($('#aiMaxHistory').value) || 10
+    maxHistory: parseInt($('#aiMaxHistory').value) || 10,
+    fewshots: _collectFewshots()
   }
   try {
     const res = await fetch(`/api/bots/${_activeAiBot}/ai`, {
@@ -449,12 +451,57 @@ async function saveAiConfig () {
       body: JSON.stringify(body)
     })
     if (!res.ok) throw new Error((await res.json()).error)
-    // 保存后回填确认
     $('#aiSystemPrompt').value = body.systemPrompt
     $('#aiMaxHistory').value = body.maxHistory
     $('#aiSaveMsg').textContent = '已保存'
     setTimeout(() => { $('#aiSaveMsg').textContent = '' }, 2000)
   } catch (err) { alert('保存失败: ' + err.message) }
+}
+
+// ===== Few-Shots =====
+
+function _collectFewshots () {
+  const pairs = []
+  $$('#aiFewshots .fs-row').forEach(row => {
+    const user = row.querySelector('.fs-user').value.trim()
+    const assistant = row.querySelector('.fs-assistant').value.trim()
+    if (user || assistant) pairs.push({ user, assistant })
+  })
+  return pairs
+}
+
+function renderFewshots (fewshots) {
+  const el = $('#aiFewshots')
+  if (!fewshots || fewshots.length === 0) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text-muted);padding:6px 0">暂无示例，点击添加</div>'
+    return
+  }
+  el.innerHTML = fewshots.map((fs, i) => `
+    <div class="fs-row">
+      <div class="fs-label">用户</div>
+      <input class="inp fs-user" value="${esc(fs.user || '')}" placeholder="玩家说的话...">
+      <div class="fs-label">AI</div>
+      <input class="inp fs-assistant" value="${esc(fs.assistant || '')}" placeholder="AI 回复...">
+      <button class="btn-danger" style="font-size:10px;padding:2px 6px" onclick="this.closest('.fs-row').remove()">✕</button>
+    </div>
+  `).join('')
+}
+
+function addFewshot () {
+  const el = $('#aiFewshots')
+  // 清除空状态
+  if (el.querySelector('.empty')) el.innerHTML = ''
+  const row = document.createElement('div')
+  row.className = 'fs-row'
+  row.innerHTML = `
+    <div class="fs-label">用户</div>
+    <input class="inp fs-user" placeholder="玩家说的话...">
+    <div class="fs-label">AI</div>
+    <input class="inp fs-assistant" placeholder="AI 回复...">
+    <button class="btn-danger" style="font-size:10px;padding:2px 6px" onclick="this.closest('.fs-row').remove()">✕</button>
+  `
+  el.appendChild(row)
+  row.querySelector('.fs-user').focus()
 }
 
 async function testAiConnection () {

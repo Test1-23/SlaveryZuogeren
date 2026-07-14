@@ -54,9 +54,11 @@ module.exports = {
       bot.emit('aiStatus', bot._ai.status)
 
       try {
-        // 构建消息列表：system + 历史 + 当前
+        // 构建消息列表：system + fewshots + 历史 + 当前
+        const fewshots = systemConfig.get('aiFewshots') || []
         const messages = [
           { role: 'system', content: systemPrompt },
+          ...fewshots.flatMap(f => [{ role: 'user', content: f.user }, { role: 'assistant', content: f.assistant }]),
           ...bot._ai.history.map(h => ({ role: h.role, content: h.content })),
           { role: 'user', content: prompt }
         ]
