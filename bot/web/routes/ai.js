@@ -30,9 +30,12 @@ function mount (app, { manager }) {
     if (!bot) return res.status(404).json({ error: 'Bot 不存在' })
     if (!bot._ai) return res.status(400).json({ error: 'AI 模块未加载' })
 
+    const systemConfig = require('../../systemConfig')
     const { systemPrompt, maxHistory, clearHistory } = req.body
+
     if (systemPrompt !== undefined) {
       bot._ai.context.systemPrompt = systemPrompt
+      systemConfig.update({ aiSystemPrompt: systemPrompt })
     }
     if (maxHistory !== undefined) {
       bot._ai.context.maxHistory = Math.max(1, Math.min(50, Number(maxHistory) || 10))
