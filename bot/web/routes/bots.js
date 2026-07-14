@@ -51,6 +51,44 @@ function mount (app, { manager, database }) {
     res.json({ success: true })
   })
 
+  // ── 模块热插拔 ──
+
+  r.get('/:id/modules', (req, res) => {
+    const bot = manager.getBot(req.params.id)
+    if (!bot) return res.status(404).json({ error: 'Bot 不存在' })
+    const loaded = (bot.moduleLoader?.loaded() || []).map(m => m.name)
+    const available = (bot.moduleLoader?.list() || []).map(m => ({
+      name: m.name,
+      version: m.version,
+      dependencies: m.dependencies || [],
+      loaded: loaded.includes(m.name),
+      canLoad: (m.dependencies || []).every(d => loaded.includes(d))
+    }))
+    res.json({ loaded: available.filter(m => m.loaded), available: available.filter(m => !m.loaded) })
+  })
+
+  r.post('/:id/modules/load', async (req, res) => {
+    const bot = manager.getBot(req.params.id)
+    if (!bot) return res.status(404).json({ error: 'Bot 不存在' })
+    const { name } = req.body
+    if (!name) return res.status(400).json({ error: '缺少 name' })
+    try {
+      await bot.moduleLoader.load(name)
+      res.json(manager.getBots().find(b => b.id === req.params.id) || { success: true })
+    } catch (e) { res.status(400).json({ error: e.message }) }
+  })
+
+  r.post('/:id/modules/unload', async (req, res) => {
+    const bot = manager.getBot(req.params.id)
+    if (!bot) return res.status(404).json({ error: 'Bot 不存在' })
+    const { name } = req.body
+    if (!name) return res.status(400).json({ error: '缺少 name' })
+    try {
+      await bot.moduleLoader.unload(name)
+      res.json(manager.getBots().find(b => b.id === req.params.id) || { success: true })
+    } catch (e) { res.status(400).json({ error: e.message }) }
+  })
+
   app.use('/api/bots', r)
 }
 

@@ -260,6 +260,7 @@ function renderBots (bots) {
             ? `<button class="btn-stop" onclick="stopBot('${b.id}')">停止</button>`
             : `<button class="btn-danger" onclick="removeDead('${b.id}')">清除</button>`}
           ${b.status === 'online' ? `<button class="btn-edit" style="margin-left:4px" onclick="openChat('${b.id}','${esc(b.name)}')">聊天</button>` : ''}
+          ${b.status === 'online' ? `<button class="btn-edit" style="margin-left:4px;background:var(--accent)" onclick="showModuleSwap('${b.id}','${esc(b.name)}')">模块</button>` : ''}
         </td>
       </tr>
     `).join('')
@@ -520,6 +521,60 @@ async function saveSettings () {
     if (!res.ok) throw new Error((await res.json()).error)
     hideSettings()
   } catch (err) { alert('保存失败: ' + err.message) }
+}
+
+// ===== 模块热插拔 =====
+
+let _swapBotId = null
+
+async function showModuleSwap (botId, name) {
+  _swapBotId = botId
+  $('#modSwapTitle').textContent = `模块管理: ${name}`
+  $('#moduleSwapOverlay').classList.remove('hidden')
+  await refreshModuleSwap()
+}
+
+function hideModuleSwap () {
+  $('#moduleSwapOverlay').classList.add('hidden')
+  _swapBotId = null
+}
+
+async function refreshModuleSwap () {
+  if (!_swapBotId) return
+  const data = await fetch(`/api/bots/${_swapBotId}/modules`).then(r => r.json()).catch(() => ({ loaded: [], available: [] }))
+
+  $('#modSwapLoaded').innerHTML = data.loaded.length
+    ? data.loaded.map(m => `
+        <div class="mod-row mod-loaded">
+          <span><strong>${esc(m.name)}</strong> <span class="mod-ver">v${m.version || '?'}</span></span>
+          <button class="btn-danger" style="font-size:11px;padding:3px 8px" onclick="swapModule('unload','${esc(m.name)}')">卸载</button>
+        </div>`).join('')
+    : '<div style="font-size:13px;color:var(--text-muted);padding:8px 0">无已加载模块</div>'
+
+  $('#modSwapAvailable').innerHTML = data.available.length
+    ? data.available.map(m => `
+        <div class="mod-row mod-avail">
+          <span>
+            <strong class="${m.canLoad ? '' : 'mod-disabled'}">${esc(m.name)}</strong>
+            <span class="mod-ver">v${m.version || '?'}</span>
+            ${m.dependencies.length ? `<span class="mp-dep-tag">依赖 ${m.dependencies.join(', ')}</span>` : ''}
+          </span>
+          <button class="btn-start" style="font-size:11px;padding:3px 8px"
+            ${m.canLoad ? `onclick="swapModule('load','${esc(m.name)}')"` : 'disabled'}>
+            加载
+          </button>
+        </div>`).join('')
+    : '<div style="font-size:13px;color:var(--text-muted);padding:8px 0">所有模块已加载</div>'
+}
+
+async function swapModule (action, name) {
+  if (!_swapBotId) return
+  const res = await fetch(`/api/bots/${_swapBotId}/modules/${action}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  })
+  if (!res.ok) { const e = await res.json().catch(() => ({})); alert(`${action}失败: ${e.error || res.status}`); return }
+  refreshModuleSwap()
 }
 
 // ===== 初始化 =====

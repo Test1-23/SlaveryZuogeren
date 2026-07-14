@@ -87,6 +87,18 @@
     </section>
   </main>
 
+  <!-- 模块热插拔弹窗 -->
+  <div id="moduleSwapOverlay" class="overlay hidden" onclick="if(event.target===this)hideModuleSwap()">
+    <div class="settings-modal" style="width:480px">
+      <h3 id="modSwapTitle">模块管理</h3>
+      <div id="modSwapLoaded" style="margin-bottom:14px"></div>
+      <div id="modSwapAvailable"></div>
+      <div class="editor-actions" style="margin-top:14px">
+        <button onclick="hideModuleSwap()">关闭</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 设置弹窗 -->
   <div id="settingsOverlay" class="overlay hidden" onclick="if(event.target===this)hideSettings()">
     <div class="settings-modal">
