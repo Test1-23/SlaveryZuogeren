@@ -75,7 +75,10 @@ module.exports = {
           bot._ai.status = 'ok'
           bot._ai.totalCalls++
           bot.emit('aiStatus', bot._ai.status)
-          bot.sendChat(reply)
+          // 长消息自动拆分发送 (Minecraft 聊天限制 ~256 字符)
+          for (const chunk of _splitMsg(reply)) {
+            bot.sendChat(chunk)
+          }
         } else {
           bot._ai.status = 'ok'
           bot._ai.totalCalls++
@@ -103,9 +106,28 @@ module.exports = {
   }
 }
 
+/**
+ * 按句子边界拆分长消息，每段 ≤ 200 字符
+ */
+function _splitMsg (text, maxLen = 200) {
+  if (text.length <= maxLen) return [text]
+  const chunks = []
+  let remaining = text
+  while (remaining.length > maxLen) {
+    // 尝试在标点处断开
+    const cut = remaining.lastIndexOf('。', maxLen)
+    const idx = cut > maxLen / 2 ? cut : remaining.lastIndexOf('，', maxLen)
+    const split = idx > maxLen / 2 ? idx + 1 : maxLen
+    chunks.push(remaining.slice(0, split).trim())
+    remaining = remaining.slice(split).trim()
+  }
+  if (remaining) chunks.push(remaining)
+  return chunks
+}
+
 function _callDeepSeek (apiKey, model, messages) {
   return new Promise((resolve, reject) => {
-    const body = JSON.stringify({ model, messages, max_tokens: 200, temperature: 0.8 })
+    const body = JSON.stringify({ model, messages, temperature: 0.8 })
 
     const req = https.request({
       hostname: 'api.deepseek.com',
