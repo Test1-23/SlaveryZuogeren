@@ -26,7 +26,8 @@ function snapshot (bot) {
     pitch: bot.entity?.pitch ?? null,
     isAlive: bot.isAlive ?? false,
     isSleeping: bot.isSleeping ?? false,
-    modules: bot.moduleLoader?.loaded() ?? []
+    modules: bot.moduleLoader?.loaded() ?? [],
+    players: bot.players ? Object.values(bot.players).map(p => ({ username: p.username, ping: p.ping })) : []
   }
 }
 
@@ -35,7 +36,7 @@ function _empty () {
     username: '?', health: 0, food: 0, foodSaturation: 0,
     gameMode: 'unknown', dimension: 'unknown',
     position: null, yaw: null, pitch: null,
-    isAlive: false, isSleeping: false, modules: []
+    isAlive: false, isSleeping: false, modules: [], players: []
   }
 }
 

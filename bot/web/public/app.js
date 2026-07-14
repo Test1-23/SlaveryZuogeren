@@ -14,6 +14,22 @@ evtSource.onmessage = (e) => {
 evtSource.onerror = () => { $('#status').textContent = '状态: 重连中...' }
 evtSource.onopen = () => { $('#status').textContent = '状态: 实时' }
 
+// ===== 系统资源监控 =====
+
+async function refreshSysInfo () {
+  try {
+    const s = await fetch('/api/system').then(r => r.json())
+    $('#sysInfo').textContent = `mem: ${s.memory.rss}MB · heap: ${s.memory.heapUsed}/${s.memory.heapTotal}MB · pid: ${s.pid} · up: ${_fmtUptime(s.uptime)}`
+  } catch (_) { /* ignore */ }
+}
+setInterval(refreshSysInfo, 3000)
+refreshSysInfo()
+
+function _fmtUptime (s) {
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60)
+  return h > 0 ? `${h}h${m}m` : `${m}m`
+}
+
 // ===== 模块选择器 =====
 
 let _modules = []
@@ -268,6 +284,9 @@ function renderBots (bots) {
   // 更新 AI 面板
   updateAiPanel(bots)
 
+  // 更新在线玩家
+  renderPlayers(bots)
+
   // 更新聊天面板的 bot 选择器
   const sel = $('#chatBotSelect')
   const online = bots.filter(b => b.status === 'online')
@@ -280,6 +299,36 @@ function renderBots (bots) {
     // 默认选第一个在线 bot
     if (online[0]) openChat(online[0].id, online[0].name)
   }
+}
+
+// ===== 在线玩家 =====
+
+function renderPlayers (bots) {
+  const online = bots.filter(b => b.status === 'online')
+  // 去重合并所有 bot 看到的玩家
+  const seen = new Set()
+  const players = []
+  for (const b of online) {
+    for (const p of (b.players || [])) {
+      if (!seen.has(p.username)) {
+        seen.add(p.username)
+        players.push(p)
+      }
+    }
+  }
+  $('#playerCount').textContent = `在线玩家: ${players.length}`
+  const el = $('#playerList')
+  if (players.length === 0) {
+    el.innerHTML = '<span class="empty" style="display:block;padding:12px;font-size:13px">暂无其他玩家</span>'
+    return
+  }
+  el.innerHTML = players.map(p => `
+    <div class="player-tag">
+      <span class="player-dot"></span>
+      ${esc(p.username)}
+      <span style="font-size:11px;color:var(--text-muted);margin-left:4px">${p.ping ?? '?'}ms</span>
+    </div>
+  `).join('')
 }
 
 // ===== 聊天面板 =====
