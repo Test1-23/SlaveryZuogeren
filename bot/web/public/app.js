@@ -66,6 +66,10 @@ function getCheckedModules (dropId) {
   return Array.from($$('#' + dropId + ' input[type=checkbox]:checked')).map(cb => cb.value)
 }
 
+function setCheckedModules (dropId, names) {
+  $$('#' + dropId + ' input[type=checkbox]').forEach(cb => { cb.checked = names.includes(cb.value) })
+}
+
 // ===== 快速启动：加载配置列表 =====
 
 async function loadConfigList () {
@@ -401,8 +405,13 @@ async function fetchAiState () {
     $('#aiStatusBadge').className = `badge badge-${data.status === 'ok' || data.status === 'idle' ? 'online' : data.status === 'calling' ? 'connecting' : 'error'}`
 
     if (data.context) {
-      $('#aiSystemPrompt').value = data.context.systemPrompt || ''
-      $('#aiMaxHistory').value = data.context.maxHistory || 10
+      // 只在用户未编辑时才刷新（避免覆盖正在输入的内容）
+      if (document.activeElement !== $('#aiSystemPrompt')) {
+        $('#aiSystemPrompt').value = data.context.systemPrompt || ''
+      }
+      if (document.activeElement !== $('#aiMaxHistory')) {
+        $('#aiMaxHistory').value = data.context.maxHistory || 10
+      }
     }
     if (data.lastError) {
       $('#aiStats').innerHTML = `<div style="color:var(--red);margin-bottom:4px">错误: ${esc(data.lastError)}</div>` + _statsHtml(data)
