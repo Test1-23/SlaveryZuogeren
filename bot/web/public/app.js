@@ -20,7 +20,10 @@ async function refreshSysInfo () {
   try {
     const s = await fetch('/api/system').then(r => r.json())
     $('#sysInfo').textContent = `mem: ${s.memory.rss}MB · heap: ${s.memory.heapUsed}/${s.memory.heapTotal}MB · pid: ${s.pid} · up: ${_fmtUptime(s.uptime)}`
-  } catch (_) { /* ignore */ }
+  } catch (e) {
+    $('#sysInfo').textContent = 'mem: ? · cpu: ?'
+    console.warn('[sysInfo] 获取系统资源失败:', e.message)
+  }
 }
 setInterval(refreshSysInfo, 3000)
 refreshSysInfo()
