@@ -56,13 +56,16 @@ function mount (app, { manager, database }) {
   r.get('/:id/modules', (req, res) => {
     const bot = manager.getBot(req.params.id)
     if (!bot) return res.status(404).json({ error: 'Bot 不存在' })
-    const loaded = (bot.moduleLoader?.loaded() || []).map(m => m.name)
-    const available = (bot.moduleLoader?.list() || []).map(m => ({
-      name: m.name,
-      version: m.version,
-      dependencies: m.dependencies || [],
-      loaded: loaded.includes(m.name),
-      canLoad: (m.dependencies || []).every(d => loaded.includes(d))
+    const loadedNames = (bot.moduleLoader?.loaded() || []).map(m => m.name)
+    // 兼容旧格式(string)和新格式(object)
+    const all = (bot.moduleLoader?.list() || []).map(m => {
+      if (typeof m === 'string') return { name: m, version: '?', dependencies: [] }
+      return { name: m.name, version: m.version, dependencies: m.dependencies || [] }
+    })
+    const available = all.map(m => ({
+      ...m,
+      loaded: loadedNames.includes(m.name),
+      canLoad: (m.dependencies || []).every(d => loadedNames.includes(d))
     }))
     res.json({ loaded: available.filter(m => m.loaded), available: available.filter(m => !m.loaded) })
   })
