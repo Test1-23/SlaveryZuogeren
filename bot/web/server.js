@@ -12,6 +12,7 @@ const modules = require('./routes/modules')
 const sse = require('./routes/sse')
 const settings = require('./routes/settings')
 const ai = require('./routes/ai')
+const log = require('../logger').createLogger('Web')
 
 function createServer ({ manager, database, moduleLoader, port = 3000 }) {
   const app = express()
@@ -28,7 +29,7 @@ function createServer ({ manager, database, moduleLoader, port = 3000 }) {
   ai.mount(app, deps)
 
   function start () {
-    return new Promise(resolve => app.listen(port, () => { console.log(`[Web] http://localhost:${port}`); resolve() }))
+    return new Promise(resolve => app.listen(port, () => { log.info(`http://localhost:${port}`); resolve() }))
   }
 
   return { app, start }

@@ -10,6 +10,7 @@
  */
 
 const https = require('https')
+const log = require('../../logger').createLogger('v4fchat')
 
 const DEFAULT_SYSTEM_PROMPT = `你是一个 Minecraft 机器人。玩家们在游戏内聊天，你用中文简短回复（1-2句话）。你的名字是 Bot。说话风格像普通玩家。`
 
@@ -90,12 +91,12 @@ module.exports = {
         bot._ai.totalCalls++
         bot._ai.totalErrors++
         bot.emit('aiStatus', bot._ai.status)
-        console.error('[v4fchat] API 失败:', err.message)
+        log.error('API 调用失败:', err.message)
       }
     }
 
     bot.on('chatMessage', bot._v4fchat_onMsg)
-    console.log('[v4fchat] 模块已注入 (依赖 chat)')
+    log.info('模块已注入 (依赖 chat)')
   },
 
   unload (bot) {

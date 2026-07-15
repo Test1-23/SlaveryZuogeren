@@ -33,3 +33,6 @@ launcher_accounts.json
 
 # Database
 data/
+
+# Logs
+logs/

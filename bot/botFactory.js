@@ -18,6 +18,7 @@
 const mineflayer = require('mineflayer')
 const { loadModule, unloadModule, listModules, getLoadedModules, loadModules } = require('./moduleLoader')
 const defaults = require('./config')
+const log = require('./logger').createLogger('BotFactory')
 
 function createBot (cfg = {}, { moduleLoader } = {}) {
   const ml = moduleLoader || { loadModule, unloadModule, listModules, getLoadedModules, loadModules }
@@ -48,21 +49,17 @@ function createBot (cfg = {}, { moduleLoader } = {}) {
   }
 
   // 基础事件日志
-  bot.on('error', (err) => { console.error('[Bot] 错误:', err.message) })
-  bot.on('kicked', (reason) => { console.log(`[Bot] 被踢出服务器: ${reason}`) })
+  bot.on('error', (err) => { log.error(err.message) })
+  bot.on('kicked', (reason) => { log.warn(`被踢出: ${reason}`) })
 
-  // 断连时清理所有模块
   bot.on('end', (reason) => {
-    console.log(`[Bot] 连接断开: ${reason}`)
+    log.info(`连接断开: ${reason}`)
     const names = ml.getLoadedModules(bot).map(m => m.name).reverse()
-    for (const name of names) {
-      ml.unloadModule(bot, name).catch(() => {})
-    }
+    for (const name of names) ml.unloadModule(bot, name).catch(() => {})
   })
 
-  // spawn 后加载模块
   bot.once('spawn', async () => {
-    console.log(`[Bot] ${bot.username} 已生成，游戏模式: ${bot.game?.gameMode}`)
+    log.info(`${bot.username} 已生成, ${bot.game?.gameMode}`)
     await ml.loadModules(bot, modules)
     bot.emit('ready')
   })

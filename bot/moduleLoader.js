@@ -15,6 +15,7 @@
 const path = require('path')
 const fs = require('fs')
 const { ModuleRegistry } = require('./moduleRegistry')
+const log = require('./logger').createLogger('ModuleLoader')
 
 const MODULES_DIR = path.join(__dirname, 'modules')
 
@@ -65,7 +66,7 @@ async function loadModule (bot, moduleName, opts = {}) {
   const reg = _reg(bot)
 
   if (reg.has(moduleName)) {
-    console.warn(`[ModuleLoader] 模块 "${moduleName}" 已加载`)
+    log.warn(`模块 "${moduleName}" 已加载`)
     return reg.get(moduleName)
   }
 
@@ -82,7 +83,7 @@ async function loadModule (bot, moduleName, opts = {}) {
   // 递归加载依赖
   for (const dep of mod.dependencies) {
     if (!reg.has(dep)) {
-      console.warn(`[ModuleLoader] 自动加载依赖: ${dep}`)
+      log.warn(`自动加载依赖: ${dep}`)
       await loadModule(bot, dep, opts)
     }
   }
@@ -91,7 +92,7 @@ async function loadModule (bot, moduleName, opts = {}) {
 
   const meta = { name: mod.name, version: mod.version, dependencies: mod.dependencies, module: mod, options: opts }
   reg.register(meta)
-  console.log(`[ModuleLoader] ✓ ${mod.name} v${mod.version}`)
+  log.info(`✓ ${mod.name} v${mod.version}`)
   return meta
 }
 
@@ -103,7 +104,7 @@ async function loadModule (bot, moduleName, opts = {}) {
 async function unloadModule (bot, moduleName) {
   const reg = _reg(bot)
   const meta = reg.get(moduleName)
-  if (!meta) { console.warn(`[ModuleLoader] "${moduleName}" 未加载`); return }
+  if (!meta) { log.warn(`"${moduleName}" 未加载`); return }
 
   // 检查反向依赖
   for (const [n, m] of reg.entries()) {
@@ -113,12 +114,12 @@ async function unloadModule (bot, moduleName) {
   }
 
   if (typeof meta.module.unload === 'function') {
-    try { await meta.module.unload(bot) } catch (e) { console.error(`[ModuleLoader] unload 失败: ${e.message}`) }
+    try { await meta.module.unload(bot) } catch (e) { log.error(`unload 失败: ${e.message}`) }
   }
 
   reg.unregister(moduleName)
   delete require.cache[require.resolve(path.join(MODULES_DIR, moduleName, 'index.js'))]
-  console.log(`[ModuleLoader] ✗ ${moduleName}`)
+  log.info(`✗ ${moduleName}`)
 }
 
 /**
@@ -128,7 +129,7 @@ async function unloadModule (bot, moduleName) {
  */
 async function loadModules (bot, names) {
   for (const name of names) {
-    try { await loadModule(bot, name) } catch (e) { console.error(`[ModuleLoader] ${name}: ${e.message}`) }
+    try { await loadModule(bot, name) } catch (e) { log.error(`${name}: ${e.message}`) }
   }
 }
 

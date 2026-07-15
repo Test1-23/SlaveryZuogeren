@@ -9,6 +9,7 @@
  *   type: 'player' | 'system' | 'whisper' | 'actionbar'
  */
 
+const log = require('../../logger').createLogger('Chat')
 const MAX_MESSAGES = 500
 
 module.exports = {
@@ -65,7 +66,7 @@ module.exports = {
     // 发送消息的便捷方法
     bot.sendChat = (msg) => bot.chat(msg)
 
-    console.log('[Chat] 模块已注入')
+    log.info('模块已注入')
   },
 
   unload (bot) {

@@ -8,6 +8,7 @@
 const path = require('path')
 const fs = require('fs')
 const defaults = require('./config')
+const log = require('./logger').createLogger('Database')
 
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'bots.db')
 let _db = null
@@ -95,8 +96,8 @@ function deleteConfig (id) {
 function _parse (row) {
   let modules = []
   let options = {}
-  try { modules = JSON.parse(row.modules || '[]') } catch (e) { console.error('[DB] 解析 modules 失败 (id=' + row.id + '):', e.message) }
-  try { options = JSON.parse(row.options || '{}') } catch (e) { console.error('[DB] 解析 options 失败 (id=' + row.id + '):', e.message) }
+  try { modules = JSON.parse(row.modules || '[]') } catch (e) { log.error(`解析 modules 失败 (id=${row.id}):`, e.message) }
+  try { options = JSON.parse(row.options || '{}') } catch (e) { log.error(`解析 options 失败 (id=${row.id}):`, e.message) }
   return { ...row, modules, options }
 }
 

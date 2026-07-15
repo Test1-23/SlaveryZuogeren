@@ -6,8 +6,9 @@
  *   WEB_PORT=8080 node bot/cli.js
  */
 
+const log = require('./logger').createLogger('CLI')
 const { startServer } = require('./index')
 
 startServer()
-  .then(() => console.log('[CLI] 控制面板已就绪'))
-  .catch(err => { console.error('[CLI] 启动失败:', err.message); process.exit(1) })
+  .then(() => log.info('控制面板已就绪'))
+  .catch(err => { log.error('启动失败:', err.message); process.exit(1) })

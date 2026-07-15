@@ -7,6 +7,7 @@
 
 const EventEmitter = require('events')
 const { snapshot } = require('./botState')
+const log = require('./logger').createLogger('Manager')
 
 class BotManager extends EventEmitter {
   /**
@@ -36,6 +37,7 @@ class BotManager extends EventEmitter {
     const id = String(this._nextId++)
     const entry = { id, configId: config.id, config: { ...config }, bot: null, status: 'connecting', startedAt: new Date().toISOString() }
     this._bots.set(id, entry)
+    log.info(`启动 bot #${id}: ${config.name} → ${config.host}:${config.port}`)
     this.emit('update')
 
     try {
@@ -61,6 +63,7 @@ class BotManager extends EventEmitter {
       return entry
     } catch (err) {
       entry.status = 'error'; entry.error = err.message
+      log.error(`启动失败 #${id}: ${err.message}`)
       try { entry.bot?.end('startup failed') } catch (_) { /* ignore */ }
       this.emit('update')
       throw err
@@ -70,6 +73,7 @@ class BotManager extends EventEmitter {
   stopBot (id) {
     const entry = this._bots.get(id)
     if (!entry) throw new Error(`Bot ${id} 不存在`)
+    log.info(`停止 bot #${id}: ${entry.config?.name || '?'}`)
     try { entry.bot?.end('manager stop') } catch (_) { /* ignore */ }
     this._bots.delete(id)
     this.emit('update')
