@@ -1,5 +1,4 @@
-const $ = (s) => document.querySelector(s)
-const $$ = (s) => document.querySelectorAll(s)
+// $ and $$ now in shared.js
 
 let _activeChatBot = null
 let _chatPollTimer = null
@@ -33,66 +32,20 @@ function _fmtUptime (s) {
   return h > 0 ? `${h}h${m}m` : `${m}m`
 }
 
-// ===== 模块选择器 =====
+// ===== 模块选择器 (buildModulePick/toggleModulePick/getCheckedModules/setCheckedModules now in shared.js) =====
 
 let _modules = []
 
 async function loadModules () {
-  _modules = await fetch('/api/modules').then(r => r.json())
+  try { _modules = await safeFetch('/api/modules') } catch { _modules = [] }
   buildModulePick('qeModulesDrop', _modules)
-}
-
-function buildModulePick (dropId, modules) {
-  if (!modules.length) { $('#' + dropId).innerHTML = '<span class="mp-empty">暂无可用模块</span>'; return }
-  $('#' + dropId).innerHTML = modules.map(m => {
-    const name = typeof m === 'string' ? m : m.name
-    const deps = m.dependencies || []
-    const isSub = deps.length > 0
-    const parent = isSub ? deps[0] : null
-    return `<label class="mp-item${isSub ? ' mp-sub' : ''}" data-depends="${parent || ''}">
-      <input type="checkbox" value="${esc(name)}" ${isSub ? `data-depends="${esc(parent)}"` : ''}> ${esc(name)}
-      ${isSub ? `<span class="mp-dep-tag">依赖 ${esc(parent)}</span>` : ''}
-    </label>`
-  }).join('')
-
-  // 联动：勾选父模块时自动启用子模块，取消父模块时自动禁用子模块
-  $$('#' + dropId + ' input[type=checkbox]').forEach(cb => {
-    cb.addEventListener('change', () => {
-      const parent = cb.value
-      $$('#' + dropId + ' input[data-depends="' + parent + '"]').forEach(sub => {
-        sub.disabled = !cb.checked
-        if (!cb.checked) sub.checked = false
-      })
-    })
-    // 初始状态
-    if (cb.dataset.depends) {
-      const p = $('#' + dropId + ' input[value="' + cb.dataset.depends + '"]')
-      if (p) cb.disabled = !p.checked
-    }
-  })
-}
-
-function toggleModulePick (pickId) {
-  const drop = $('#' + pickId + 'Drop')
-  drop.classList.toggle('show')
-  const handler = (e) => {
-    if (!e.target.closest('#' + pickId)) { drop.classList.remove('show'); document.removeEventListener('click', handler) }
-  }
-  if (drop.classList.contains('show')) setTimeout(() => document.addEventListener('click', handler), 0)
-}
-
-function getCheckedModules (dropId) {
-  return Array.from($$('#' + dropId + ' input[type=checkbox]:checked')).map(cb => cb.value)
-}
-
-function setCheckedModules (dropId, names) {
-  $$('#' + dropId + ' input[type=checkbox]').forEach(cb => { cb.checked = names.includes(cb.value) })
 }
 
 // ===== 快速启动：加载配置列表 =====
 
 async function loadConfigList () {
-  const configs = await fetch('/api/configs').then(r => r.json())
+  let configs = []
+  try { configs = await safeFetch('/api/configs') } catch { /* show empty */ }
   const el = $('#quickStartList')
   if (configs.length === 0) {
     el.innerHTML = '<span class="empty">暂无保存的配置，使用下方表单创建</span>'
@@ -115,22 +68,6 @@ async function loadConfigList () {
 
 // ===== 快速新建 =====
 
-async function quickCreateAndStart () {
-  const cfg = _readForm()
-  if (!cfg.name) return alert('请输入备注名')
-  const created = await _saveConfig(cfg)
-  if (!created) return
-  await launchBot(created.id)
-}
-
-async function quickSaveOnly () {
-  const cfg = _readForm()
-  if (!cfg.name) return alert('请输入备注名')
-  await _saveConfig(cfg)
-  _clearForm()
-  loadConfigList()
-}
-
 function _readForm () {
   return {
     name: $('#qeName').value.trim(),
@@ -144,12 +81,9 @@ function _readForm () {
 }
 
 async function _saveConfig (cfg) {
-  const res = await fetch('/api/configs', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(cfg)
-  }).then(r => r.json())
-  if (res.error) { alert('保存失败: ' + res.error); return null }
-  return res
+  try {
+    return await safeFetch('/api/configs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cfg) })
+  } catch (err) { alert('保存失败: ' + err.message); return null }
 }
 
 function _clearForm () {
@@ -160,8 +94,8 @@ function _clearForm () {
 // ===== 编辑已保存配置 =====
 
 async function startEdit (configId) {
-  const cfg = await fetch(`/api/configs/${configId}`).then(r => r.json())
-  if (cfg.error) return alert('加载失败: ' + cfg.error)
+  let cfg
+  try { cfg = await safeFetch(`/api/configs/${configId}`) } catch { return alert('加载失败') }
   $('#qeEditId').value = cfg.id
   $('#qeTitle').textContent = '编辑: ' + cfg.name
   $('#qeName').value = cfg.name
@@ -221,12 +155,9 @@ async function quickSaveOnly () {
 async function _saveUpdate (id) {
   const data = _readForm()
   if (!data.name) { alert('备注名不能为空'); return null }
-  const res = await fetch(`/api/configs/${id}`, {
-    method: 'PUT', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  }).then(r => r.json())
-  if (res.error) { alert('保存失败: ' + res.error); return null }
-  return res
+  try {
+    return await safeFetch(`/api/configs/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+  } catch (err) { alert('保存失败: ' + err.message); return null }
 }
 
 // ===== Bot 操作 =====
@@ -397,9 +328,7 @@ function clearChat () {
   $('#chatMessages').innerHTML = '<span class="empty">暂无消息</span>'
 }
 
-// ===== 工具函数 =====
-
-function esc (s) { return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]) }
+// ===== 工具函数 (esc now in shared.js) =====
 
 function elapsed (start) {
   if (!start) return '?'
@@ -580,11 +509,10 @@ async function testAiConnection () {
 
 async function clearAiHistory () {
   if (!_activeAiBot || !confirm('清空 AI 对话历史？')) return
-  await fetch(`/api/bots/${_activeAiBot}/ai`, {
-    method: 'PUT', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ clearHistory: true })
-  })
-  fetchAiState()
+  try {
+    await safeFetch(`/api/bots/${_activeAiBot}/ai`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clearHistory: true }) })
+    fetchAiState()
+  } catch (err) { alert('清空失败: ' + err.message) }
 }
 
 function updateAiStatusBadge (modules) {
@@ -598,7 +526,8 @@ function updateAiStatusBadge (modules) {
 // ===== 系统设置 =====
 
 async function showSettings () {
-  const cfg = await fetch('/api/settings').then(r => r.json()).catch(() => ({}))
+  let cfg = {}
+  try { cfg = await safeFetch('/api/settings') } catch { /* keep defaults */ }
   $('#setApiKey').value = cfg.deepseekApiKey || ''
   $('#setModel').value = cfg.deepseekModel || 'deepseek-v4-flash'
   $('#settingsOverlay').classList.remove('hidden')
@@ -668,12 +597,10 @@ async function refreshModuleSwap () {
 
 async function swapModule (action, name) {
   if (!_swapBotId) return
-  const res = await fetch(`/api/bots/${_swapBotId}/modules/${action}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name })
-  })
-  if (!res.ok) { const e = await res.json().catch(() => ({})); alert(`${action}失败: ${e.error || res.status}`); return }
-  refreshModuleSwap()
+  try {
+    await safeFetch(`/api/bots/${_swapBotId}/modules/${action}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) })
+    refreshModuleSwap()
+  } catch (err) { alert(`${action}失败: ` + err.message) }
 }
 
 // ===== 初始化 =====

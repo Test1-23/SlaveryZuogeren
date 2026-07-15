@@ -1,67 +1,21 @@
-const $ = (s) => document.querySelector(s)
-const $$ = (s) => document.querySelectorAll(s)
+// $, $$, esc, buildModulePick, toggleModulePick, getCheckedModules, setCheckedModules, safeFetch now in shared.js
 
 let editingId = null
 let _modules = []
 
-// ===== 模块选择器 =====
+// ===== 模块列表 =====
 
 async function loadModules () {
-  _modules = await fetch('/api/modules').then(r => r.json())
-  $('#availMods').textContent = `可用模块: ${_modules.join(', ') || '(无)'}`
+  try { _modules = await safeFetch('/api/modules') } catch { _modules = [] }
+  $('#availMods').textContent = `可用模块: ${_modules.map(m => m.name).join(', ') || '(无)'}`
   buildModulePick('cfgModulesDrop', _modules)
 }
 
-function buildModulePick (dropId, modules) {
-  if (!modules.length) { $('#' + dropId).innerHTML = '<span class="mp-empty">暂无可用模块</span>'; return }
-  $('#' + dropId).innerHTML = modules.map(m => {
-    const name = typeof m === 'string' ? m : m.name
-    const deps = m.dependencies || []
-    const isSub = deps.length > 0
-    const parent = isSub ? deps[0] : null
-    return `<label class="mp-item${isSub ? ' mp-sub' : ''}" data-depends="${parent || ''}">
-      <input type="checkbox" value="${esc(name)}" ${isSub ? `data-depends="${esc(parent)}"` : ''}> ${esc(name)}
-      ${isSub ? `<span class="mp-dep-tag">依赖 ${esc(parent)}</span>` : ''}
-    </label>`
-  }).join('')
-
-  $$('#' + dropId + ' input[type=checkbox]').forEach(cb => {
-    cb.addEventListener('change', () => {
-      $$('#' + dropId + ' input[data-depends="' + cb.value + '"]').forEach(sub => {
-        sub.disabled = !cb.checked
-        if (!cb.checked) sub.checked = false
-      })
-    })
-    if (cb.dataset.depends) {
-      const p = $('#' + dropId + ' input[value="' + cb.dataset.depends + '"]')
-      if (p) cb.disabled = !p.checked
-    }
-  })
-}
-
-function toggleModulePick (pickId) {
-  const drop = $('#' + pickId + 'Drop')
-  drop.classList.toggle('show')
-  const handler = (e) => {
-    if (!e.target.closest('#' + pickId)) { drop.classList.remove('show'); document.removeEventListener('click', handler) }
-  }
-  if (drop.classList.contains('show')) {
-    setTimeout(() => document.addEventListener('click', handler), 0)
-  }
-}
-
-function getCheckedModules (dropId) {
-  return Array.from($$('#' + dropId + ' input[type=checkbox]:checked')).map(cb => cb.value)
-}
-
-function setCheckedModules (dropId, names) {
-  $$('#' + dropId + ' input[type=checkbox]').forEach(cb => { cb.checked = names.includes(cb.value) })
-}
-
-// ===== 加载 =====
+// ===== 配置列表 =====
 
 async function load () {
-  const configs = await fetch('/api/configs').then(r => r.json())
+  let configs = []
+  try { configs = await safeFetch('/api/configs') } catch { /* show empty */ }
   render(configs)
 }
 
@@ -97,19 +51,17 @@ function show (cfg) {
   $('#cfgVersion').value = cfg?.version ?? ''
   $('#cfgAuth').value = cfg?.auth ?? 'offline'
   $('#cfgUsername').value = cfg?.username ?? 'Bot'
-  // 等待模块列表加载后勾选
-  if (_modules.length) {
-    setCheckedModules('cfgModulesDrop', cfg?.modules ?? [])
-  }
+  if (_modules.length) setCheckedModules('cfgModulesDrop', cfg?.modules ?? [])
   $('#editor').classList.remove('hidden')
 }
 
 function hide () { $('#editor').classList.add('hidden'); editingId = null }
 
 async function edit (id) {
-  const cfg = await fetch(`/api/configs/${id}`).then(r => r.json())
-  if (cfg.error) return alert('加载失败: ' + cfg.error)
-  show(cfg)
+  try {
+    const cfg = await safeFetch(`/api/configs/${id}`)
+    show(cfg)
+  } catch (err) { alert('加载失败: ' + err.message) }
 }
 
 async function save () {
@@ -127,8 +79,7 @@ async function save () {
   const url = editingId ? `/api/configs/${editingId}` : '/api/configs'
   const method = editingId ? 'PUT' : 'POST'
   try {
-    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
-    if (!res.ok) throw new Error((await res.json()).error)
+    await safeFetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
     hide(); load()
   } catch (err) { alert('保存失败: ' + err.message) }
 }
@@ -137,21 +88,18 @@ async function save () {
 
 async function launch (configId) {
   try {
-    const res = await fetch('/api/bots/start', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configId })
-    })
-    if (!res.ok) throw new Error((await res.json()).error)
+    await safeFetch('/api/bots/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ configId }) })
     window.location.href = '/'
   } catch (err) { alert('启动失败: ' + err.message) }
 }
 
 async function del (id) {
   if (!confirm('确定删除此配置？')) return
-  const res = await fetch(`/api/configs/${id}`, { method: 'DELETE' })
-  if (res.ok) load(); else alert('删除失败')
+  try {
+    await safeFetch(`/api/configs/${id}`, { method: 'DELETE' })
+    load()
+  } catch (err) { alert('删除失败: ' + err.message) }
 }
-
-function esc (s) { return String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]) }
 
 // ===== 初始化 =====
 load()
