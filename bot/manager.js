@@ -48,6 +48,7 @@ class BotManager extends EventEmitter {
       bot.on('move', () => this.emit('update'))
       bot.on('death', () => this.emit('update'))
       bot.on('spawn', () => { entry.status = 'online'; this.emit('update') })
+      bot.on('infoUpdated', () => { this.emit('update') })
       bot.on('kicked', (r) => { entry.status = 'kicked'; entry.kickReason = r; log.warn(`bot #${id} 被踢出: ${_fmtReason(r)}`); this.emit('update') })
       bot.on('end', (r) => { entry.status = 'stopped'; entry.endReason = r; this.emit('update') })
       bot.on('error', (e) => { entry.status = 'error'; entry.error = e.message; this.emit('update') })
