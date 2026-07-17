@@ -103,7 +103,7 @@ module.exports = {
     bot.removeListener('chatMessage', bot._v4fchat_onMsg)
     delete bot._v4fchat_onMsg
     delete bot._ai
-    console.log('[v4fchat] 模块已卸载')
+    log.info('模块已卸载')
   }
 }
 

@@ -77,6 +77,6 @@ module.exports = {
     bot.removeListener('messagestr', bot._chat_onMessagestr)
     delete bot.sendChat
     delete bot.chatMessages
-    console.log('[Chat] 模块已卸载')
+    log.info('模块已卸载')
   }
 }
