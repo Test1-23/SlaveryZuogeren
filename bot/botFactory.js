@@ -50,7 +50,7 @@ function createBot (cfg = {}, { moduleLoader } = {}) {
 
   // 基础事件日志
   bot.on('error', (err) => { log.error(err.message) })
-  bot.on('kicked', (reason) => { log.warn(`被踢出: ${reason}`) })
+  bot.on('kicked', (reason) => { log.warn(`被踢出: ${_parseReason(reason)}`) })
 
   bot.on('end', (reason) => {
     log.info(`连接断开: ${reason}`)
@@ -65,6 +65,17 @@ function createBot (cfg = {}, { moduleLoader } = {}) {
   })
 
   return bot
+}
+
+function _parseReason (r) {
+  if (!r) return ''
+  if (typeof r === 'string') {
+    // 尝试解析 JSON ChatMessage (1.20+)
+    try { const o = JSON.parse(r); return o.text || o.translate || r } catch { return r }
+  }
+  // 已解析的对象
+  if (typeof r === 'object') return r.text || r.translate || JSON.stringify(r)
+  return String(r)
 }
 
 module.exports = { createBot }
